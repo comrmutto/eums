@@ -1,0 +1,27 @@
+{
+    "frequency": "daily",
+    "time": "02:00",
+    "keep_days": 30,
+    "last_backup": null,
+    "next_backup": "2024-01-02 02:00:00",
+    "updated_at": "2024-01-01 10:30:00",
+    "settings": {
+        "compress": true,
+        "include_data": true,
+        "notify_on_complete": true,
+        "notify_on_error": true,
+        "max_backups": 30
+    },
+    "history": [
+        {
+            "date": "2024-01-01 02:00:00",
+            "filename": "backup_20240101_020000.sql.gz",
+            "size": 15728640,
+            "status": "success"
+        }
+    ],
+    "excluded_tables": [
+        "activity_logs",
+        "login_attempts"
+    ]
+}
