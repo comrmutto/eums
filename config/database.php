@@ -11,10 +11,10 @@ ini_set('display_errors', 1);
 // Database configuration for different environments
 $db_config = [
     'development' => [
-        'host' => 'localhost',
-        'username' => 'root',
-        'password' => '13792846',
-        'database' => 'eums_db',
+        'host' => 'db',
+        'username' => 'eums',
+        'password' => 'eums_13792846',
+        'database' => 'eums',
         'port' => 3306,
         'charset' => 'utf8', // เปลี่ยนจาก utf8mb4 เป็น utf8
         'collation' => 'utf8_unicode_ci', // เปลี่ยนจาก utf8mb4_unicode_ci เป็น utf8_unicode_ci
@@ -27,10 +27,10 @@ $db_config = [
         ]
     ],
     'production' => [
-        'host' => 'localhost',
-        'username' => 'root',
-        'password' => '13792846',
-        'database' => 'eums_db',
+        'host' => 'db',
+        'username' => 'eums',
+        'password' => 'eums_13792846',
+        'database' => 'eums',
         'port' => 3306,
         'charset' => 'utf8',
         'collation' => 'utf8_unicode_ci',
@@ -42,10 +42,10 @@ $db_config = [
         ]
     ],
     'testing' => [
-        'host' => 'localhost',
-        'username' => 'root',
-        'password' => '13792846',
-        'database' => 'eums_db',
+        'host' => 'db',
+        'username' => 'eums',
+        'password' => 'eums_13792846',
+        'database' => 'eums',
         'port' => 3306,
         'charset' => 'utf8',
         'collation' => 'utf8_unicode_ci',
@@ -132,7 +132,7 @@ class Database {
             error_log("Error code: " . $e->getCode());
             
             // ในโหมด development ให้แสดง error จริง
-            if ($this->config['host'] == 'localhost' || $this->config['host'] == '127.0.0.1') {
+            if ($this->config['host'] == 'db' || $this->config['host'] == '127.0.0.1') {
                 die("Database Error: " . $e->getMessage());
             } else {
                 die("ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณาติดต่อผู้ดูแลระบบ");
