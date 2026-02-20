@@ -1,6 +1,6 @@
 <?php
 /**
- * AJAX: Delete Record
+ * AJAX: Delete Air Compressor Daily Record
  * Engineering Utility Monitoring System (EUMS)
  */
 
@@ -12,7 +12,7 @@ if (session_status() == PHP_SESSION_NONE) {
 // Check authentication
 if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    echo json_encode(['success' => false, 'message' => 'กรุณาเข้าสู่ระบบ']);
     exit();
 }
 
@@ -35,8 +35,7 @@ try {
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     
     if (!$id) {
-        echo json_encode(['success' => false, 'message' => 'Record ID required']);
-        exit();
+        throw new Exception('Record ID required');
     }
     
     // Begin transaction
@@ -44,9 +43,10 @@ try {
     
     // Get record details for logging
     $stmt = $db->prepare("
-        SELECT r.*, m.machine_name 
+        SELECT r.*, m.machine_code, s.inspection_item 
         FROM air_daily_records r
         JOIN mc_air m ON r.machine_id = m.id
+        JOIN air_inspection_standards s ON r.inspection_item_id = s.id
         WHERE r.id = ?
     ");
     $stmt->execute([$id]);
@@ -56,13 +56,18 @@ try {
         throw new Exception('Record not found');
     }
     
+    // Check permission (optional: allow users to delete only their own records)
+    if ($_SESSION['user_role'] !== 'admin' && $record['recorded_by'] !== $_SESSION['username']) {
+        throw new Exception('คุณไม่มีสิทธิ์ลบข้อมูลนี้');
+    }
+    
     // Delete record
     $stmt = $db->prepare("DELETE FROM air_daily_records WHERE id = ?");
     $stmt->execute([$id]);
     
     // Log activity
     logActivity($_SESSION['user_id'], 'delete_air_record', 
-               "Deleted record ID: $id, Machine: {$record['machine_name']}, Date: {$record['record_date']}");
+               "ลบบันทึก Air ID: $id, เครื่อง: {$record['machine_code']}, รายการ: {$record['inspection_item']}, วันที่: {$record['record_date']}");
     
     // Commit transaction
     $db->commit();
@@ -80,7 +85,7 @@ try {
     
     echo json_encode([
         'success' => false,
-        'message' => 'Database error: ' . $e->getMessage()
+        'message' => $e->getMessage()
     ]);
 }
 ?>

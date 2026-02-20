@@ -69,6 +69,9 @@ $userRole = $_SESSION['user_role'] ?? 'viewer';
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/eums/assets/css/styles.css">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/eums/favicon/favicon-32x32.png">
     
     <!-- Module specific CSS -->
     <?php if (isset($module_css)): ?>
