@@ -33,7 +33,6 @@ function getDB() {
     
     if ($db === null) {
         try {
-            // โหลดไฟล์ database.php และรับ instance จาก Database class
             require_once __DIR__ . '/../config/database.php';
             $database = Database::getInstance();
             $db = $database->getConnection();
@@ -43,7 +42,7 @@ function getDB() {
             
         } catch (Exception $e) {
             error_log("getDB Error: " . $e->getMessage());
-            die("Database connection error: " . $e->getMessage());
+            throw new Exception("ไม่สามารถเชื่อมต่อฐานข้อมูลได้");
         }
     }
     

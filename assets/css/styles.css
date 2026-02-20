@@ -434,3 +434,8 @@ body {
         border-radius: 4px !important;
     }
 }
+@property --chart-color {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: #007bff;
+}

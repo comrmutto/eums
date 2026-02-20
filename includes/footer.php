@@ -76,10 +76,10 @@
 </div>
 <!-- ./wrapper -->
 
-<!-- jQuery -->
+<!-- jQuery (ต้องมาก่อนทุกอย่าง) -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-<!-- Bootstrap 5 -->
+<!-- Bootstrap 5 Bundle (includes Popper) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <!-- AdminLTE -->
@@ -90,7 +90,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/locale/th.js"></script>
 
 <!-- Chart.js -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/charts.css/dist/charts.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
 
 <!-- DataTables -->
 <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
@@ -116,7 +116,7 @@
 <!-- SheetJS (for Excel export) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-<!-- Custom JS -->
+<!-- Custom JS (โหลดหลัง libraries ทั้งหมด) -->
 <script src="/eums/assets/js/main.js"></script>
 
 <!-- Module specific JS -->
@@ -133,69 +133,77 @@
 
 <!-- Custom inline scripts -->
 <script>
-    // Set moment locale to Thai
-    moment.locale('th');
-    
-    // Toastr configuration
-    toastr.options = {
-        "closeButton": true,
-        "debug": false,
-        "newestOnTop": true,
-        "progressBar": true,
-        "positionClass": "toast-top-right",
-        "preventDuplicates": false,
-        "onclick": null,
-        "showDuration": "300",
-        "hideDuration": "1000",
-        "timeOut": "5000",
-        "extendedTimeOut": "1000",
-        "showEasing": "swing",
-        "hideEasing": "linear",
-        "showMethod": "fadeIn",
-        "hideMethod": "fadeOut"
-    };
-    
-    // Auto refresh functionality
-    let refreshInterval;
-    $('#refreshInterval').on('change', function() {
-        if (refreshInterval) {
-            clearInterval(refreshInterval);
-        }
+    // ตรวจสอบว่า jQuery โหลดหรือไม่
+    if (typeof jQuery === 'undefined') {
+        console.error('jQuery is not loaded!');
+        document.write('<div class="alert alert-danger">เกิดข้อผิดพลาด: jQuery ไม่สามารถโหลดได้ กรุณารีเฟรชหน้า</div>');
+    } else {
+        console.log('jQuery loaded successfully');
         
-        const interval = parseInt($(this).val());
-        if (interval > 0) {
-            refreshInterval = setInterval(function() {
-                $('#refreshData').click();
-            }, interval);
-        }
-    });
-    
-    // Theme switcher
-    $('#themeSelector').on('change', function() {
-        const theme = $(this).val();
-        $('body').attr('data-theme', theme);
-        localStorage.setItem('eums_theme', theme);
-    });
-    
-    // Font size switcher
-    $('#fontSizeSelector').on('change', function() {
-        const size = $(this).val();
-        $('body').css('font-size', size);
-        localStorage.setItem('eums_fontSize', size);
-    });
-    
-    // Load saved preferences
-    $(document).ready(function() {
-        const savedTheme = localStorage.getItem('eums_theme');
-        if (savedTheme) {
-            $('#themeSelector').val(savedTheme).trigger('change');
-        }
+        // Set moment locale to Thai
+        moment.locale('th');
         
-        const savedFontSize = localStorage.getItem('eums_fontSize');
-        if (savedFontSize) {
-            $('#fontSizeSelector').val(savedFontSize).trigger('change');
-        }
-    });
+        // Toastr configuration
+        toastr.options = {
+            "closeButton": true,
+            "debug": false,
+            "newestOnTop": true,
+            "progressBar": true,
+            "positionClass": "toast-top-right",
+            "preventDuplicates": false,
+            "onclick": null,
+            "showDuration": "300",
+            "hideDuration": "1000",
+            "timeOut": "5000",
+            "extendedTimeOut": "1000",
+            "showEasing": "swing",
+            "hideEasing": "linear",
+            "showMethod": "fadeIn",
+            "hideMethod": "fadeOut"
+        };
+        
+        // Auto refresh functionality
+        let refreshInterval;
+        $('#refreshInterval').on('change', function() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+            
+            const interval = parseInt($(this).val());
+            if (interval > 0) {
+                refreshInterval = setInterval(function() {
+                    $('#refreshData').click();
+                }, interval);
+            }
+        });
+        
+        // Theme switcher
+        $('#themeSelector').on('change', function() {
+            const theme = $(this).val();
+            $('body').attr('data-theme', theme);
+            localStorage.setItem('eums_theme', theme);
+        });
+        
+        // Font size switcher
+        $('#fontSizeSelector').on('change', function() {
+            const size = $(this).val();
+            $('body').css('font-size', size);
+            localStorage.setItem('eums_fontSize', size);
+        });
+        
+        // Load saved preferences
+        $(document).ready(function() {
+            const savedTheme = localStorage.getItem('eums_theme');
+            if (savedTheme) {
+                $('#themeSelector').val(savedTheme).trigger('change');
+            }
+            
+            const savedFontSize = localStorage.getItem('eums_fontSize');
+            if (savedFontSize) {
+                $('#fontSizeSelector').val(savedFontSize).trigger('change');
+            }
+        });
+    }
 </script>
 
 </body>
