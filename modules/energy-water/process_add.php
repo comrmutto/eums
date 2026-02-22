@@ -159,21 +159,20 @@ try {
                 record_date = ?,
                 morning_reading = ?,
                 evening_reading = ?,
-                usage_amount = ?,
                 remarks = ?,
                 updated_at = NOW()
             WHERE id = ?
         ");
-        $stmt->execute([$meter_id, $record_date_db, $morning_reading, $evening_reading, $usage, $remarks, $id]);
+        $stmt->execute([$meter_id, $record_date_db, $morning_reading, $evening_reading, $remarks, $id]);
         
         logActivity($_SESSION['user_id'], 'edit_meter_reading', "Updated reading ID: $id");
     } else {
         $stmt = $db->prepare("
             INSERT INTO meter_daily_readings 
-            (doc_id, meter_id, record_date, morning_reading, evening_reading, usage_amount, remarks, recorded_by, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            (doc_id, meter_id, record_date, morning_reading, evening_reading, remarks, recorded_by, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
         ");
-        $stmt->execute([$doc_id, $meter_id, $record_date_db, $morning_reading, $evening_reading, $usage, $remarks, $_SESSION['username']]);
+        $stmt->execute([$doc_id, $meter_id, $record_date_db, $morning_reading, $evening_reading, $remarks, $_SESSION['username']]);
         $id = $db->lastInsertId();
         
         logActivity($_SESSION['user_id'], 'add_meter_reading', "Added reading ID: $id");

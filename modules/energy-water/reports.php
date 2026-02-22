@@ -33,18 +33,29 @@ require_once __DIR__ . '/../../includes/functions.php';
 // Get database connection
 $db = getDB();
 
+// แปลงวันที่จาก DD/MM/YYYY (datepicker) → Y-m-d สำหรับ query
+function toDbDate($input, $default) {
+    if (empty($input)) return $default;
+    if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $input, $m)) {
+        $year = (int)$m[3] > 2500 ? (int)$m[3] - 543 : (int)$m[3];
+        return sprintf('%04d-%02d-%02d', $year, (int)$m[2], (int)$m[1]);
+    }
+    return $input; // Y-m-d อยู่แล้ว
+}
+
 // Get parameters
-$reportType = isset($_GET['report_type']) ? $_GET['report_type'] : 'daily';
-$startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
-$endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
-$meterId = isset($_GET['meter_id']) ? (int)$_GET['meter_id'] : 0;
-$meterType = isset($_GET['meter_type']) ? $_GET['meter_type'] : '';
+$reportType  = isset($_GET['report_type'])  ? $_GET['report_type']  : 'daily';
+$meterId     = isset($_GET['meter_id'])     ? (int)$_GET['meter_id'] : 0;
+$meterType   = isset($_GET['meter_type'])   ? $_GET['meter_type']   : '';
 $compareWith = isset($_GET['compare_with']) ? $_GET['compare_with'] : 'previous';
-$groupBy = isset($_GET['group_by']) ? $_GET['group_by'] : 'day';
+$groupBy     = isset($_GET['group_by'])     ? $_GET['group_by']     : 'day';
+
+$startDate = toDbDate(isset($_GET['start_date']) ? $_GET['start_date'] : '', date('Y-m-01'));
+$endDate   = toDbDate(isset($_GET['end_date'])   ? $_GET['end_date']   : '', date('Y-m-d'));
 
 // Format dates for display
-$displayStartDate = date('d/m/Y', strtotime($startDate));
-$displayEndDate = date('d/m/Y', strtotime($endDate));
+$displayStartDate = (DateTime::createFromFormat('Y-m-d', $startDate) ?: new DateTime())->format('d/m/Y');
+$displayEndDate   = (DateTime::createFromFormat('Y-m-d', $endDate)   ?: new DateTime())->format('d/m/Y');
 
 // Get all meters for dropdown
 $stmt = $db->query("
@@ -145,13 +156,13 @@ if ($meterId > 0) {
                         <div class="col-md-2" id="dateRangeDiv">
                             <div class="form-group">
                                 <label>วันที่เริ่มต้น</label>
-                                <div class="input-group date" id="startDatePicker" data-target-input="nearest">
-                                    <input type="text" class="form-control datetimepicker-input" 
+                                <div class="input-group">
+                                    <input type="text" class="form-control datepicker" 
                                            name="start_date" id="startDate" 
-                                           value="<?php echo $displayStartDate; ?>" 
-                                           data-target="#startDatePicker">
-                                    <div class="input-group-append" data-target="#startDatePicker" data-toggle="datetimepicker">
-                                        <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                           value="<?php echo $displayStartDate; ?>"
+                                           autocomplete="off">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text"><i class="fa fa-calendar"></i></span>
                                     </div>
                                 </div>
                             </div>
@@ -160,13 +171,13 @@ if ($meterId > 0) {
                         <div class="col-md-2" id="endDateDiv">
                             <div class="form-group">
                                 <label>วันที่สิ้นสุด</label>
-                                <div class="input-group date" id="endDatePicker" data-target-input="nearest">
-                                    <input type="text" class="form-control datetimepicker-input" 
+                                <div class="input-group">
+                                    <input type="text" class="form-control datepicker" 
                                            name="end_date" id="endDate" 
-                                           value="<?php echo $displayEndDate; ?>" 
-                                           data-target="#endDatePicker">
-                                    <div class="input-group-append" data-target="#endDatePicker" data-toggle="datetimepicker">
-                                        <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                           value="<?php echo $displayEndDate; ?>"
+                                           autocomplete="off">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text"><i class="fa fa-calendar"></i></span>
                                     </div>
                                 </div>
                             </div>
@@ -562,21 +573,21 @@ if ($meterId > 0) {
     </div>
 </section>
 
+<?php
+// Include footer
+require_once __DIR__ . '/../../includes/footer.php';
+?>
+
 <script>
 let reportChart = null;
 
 $(document).ready(function() {
-    // Initialize date pickers
-    $('#startDatePicker').datetimepicker({
-        format: 'DD/MM/YYYY',
-        locale: 'th',
-        useCurrent: false
-    });
-    
-    $('#endDatePicker').datetimepicker({
-        format: 'DD/MM/YYYY',
-        locale: 'th',
-        useCurrent: false
+    // Initialize date pickers (bootstrap-datepicker)
+    $('.datepicker').datepicker({
+        format: 'dd/mm/yyyy',
+        autoclose: true,
+        todayHighlight: true,
+        language: 'th'
     });
     
     // Initialize select2
@@ -1219,8 +1230,3 @@ function prepareSummaryChartData($data) {
     }
 }
 </style>
-
-<?php
-// Include footer
-require_once __DIR__ . '/../../includes/footer.php';
-?>

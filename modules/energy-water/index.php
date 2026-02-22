@@ -448,6 +448,11 @@ foreach ($readings as $reading) {
     </div>
 </div>
 
+<?php
+// Include footer
+require_once __DIR__ . '/../../includes/footer.php';
+?>
+
 <script>
 let electricityChart = null;
 let waterChart = null;
@@ -705,7 +710,7 @@ function saveReading() {
                     location.reload();
                 }, 1500);
             } else {
-                showNotification(response.message, 'danger');
+                showNotification(response.message, 'error');
             }
         }
     });
@@ -724,7 +729,7 @@ function deleteReading(id) {
                         location.reload();
                     }, 1500);
                 } else {
-                    showNotification(response.message, 'danger');
+                    showNotification(response.message, 'error');
                 }
             }
         });
@@ -743,7 +748,7 @@ function updateDocument() {
             if (response.success) {
                 showNotification('อัปเดตเอกสารเรียบร้อย', 'success');
             } else {
-                showNotification(response.message, 'danger');
+                showNotification(response.message, 'error');
             }
         }
     });
@@ -752,9 +757,38 @@ function updateDocument() {
 function exportData() {
     window.location.href = 'export.php?month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>';
 }
-</script>
 
-<?php
-// Include footer
-require_once __DIR__ . '/../../includes/footer.php';
-?>
+function showNotification(message, type) {
+    const toastrType = type === 'error' ? 'error'
+                     : type === 'warning' ? 'warning'
+                     : type === 'info' ? 'info'
+                     : 'success';
+
+    if (typeof toastr !== 'undefined') {
+        toastr.options = {
+            closeButton: true,
+            progressBar: true,
+            positionClass: 'toast-top-right',
+            timeOut: 4000
+        };
+        toastr[toastrType](message);
+    } else {
+        const icons    = { success: 'check-circle', error: 'times-circle', warning: 'exclamation-triangle', info: 'info-circle' };
+        const colors   = { success: '#28a745', error: '#dc3545', warning: '#ffc107', info: '#17a2b8' };
+        const id = 'popup_' + Date.now();
+        const el = $(`
+            <div id="${id}" style="
+                position:fixed; top:20px; right:20px; z-index:99999;
+                background:#fff; border-left:5px solid ${colors[type]||colors.info};
+                border-radius:4px; padding:14px 20px; min-width:280px; max-width:380px;
+                box-shadow:0 4px 16px rgba(0,0,0,.18); display:flex; align-items:center; gap:10px;">
+                <i class="fas fa-${icons[type]||icons.info}" style="color:${colors[type]||colors.info};font-size:1.3em;"></i>
+                <span style="flex:1;font-size:.95em;">${message}</span>
+                <span style="cursor:pointer;font-size:1.1em;color:#888;"
+                      onclick="$('#${id}').fadeOut(300,function(){$(this).remove()})">&times;</span>
+            </div>`);
+        $('body').append(el);
+        setTimeout(() => el.fadeOut(400, function(){ $(this).remove(); }), 4000);
+    }
+}
+</script>

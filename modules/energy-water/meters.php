@@ -146,17 +146,17 @@ foreach ($meters as $meter) {
             </div>
             <div class="card-body">
                 <form method="GET" class="form-inline">
-                    <div class="form-group mr-2">
+                    <div class="form-group mr-2" style="width: 200px; height: 40px;">
                         <label class="mr-2">ประเภท:</label>
-                        <select name="type" class="form-control form-control-sm">
+                        <select name="type" class="form-control form-control-sm" style="height: 40px">
                             <option value="">ทั้งหมด</option>
                             <option value="electricity" <?php echo $filterType == 'electricity' ? 'selected' : ''; ?>>มิเตอร์ไฟฟ้า</option>
                             <option value="water" <?php echo $filterType == 'water' ? 'selected' : ''; ?>>มิเตอร์น้ำ</option>
                         </select>
                     </div>
-                    <div class="form-group mr-2">
+                    <div class="form-group mr-2" style="width: 200px; height: 40px;">
                         <label class="mr-2">สถานะ:</label>
-                        <select name="status" class="form-control form-control-sm">
+                        <select name="status" class="form-control form-control-sm" style="height: 40px">
                             <option value="-1">ทั้งหมด</option>
                             <option value="1" <?php echo $filterStatus == 1 ? 'selected' : ''; ?>>ใช้งาน</option>
                             <option value="0" <?php echo $filterStatus == 0 ? 'selected' : ''; ?>>ไม่ใช้งาน</option>
@@ -399,6 +399,11 @@ foreach ($meters as $meter) {
     </div>
 </div>
 
+<?php
+// Include footer
+require_once __DIR__ . '/../../includes/footer.php';
+?>
+
 <script>
 $(document).ready(function() {
     // Initialize DataTable
@@ -477,11 +482,11 @@ function editMeter(id) {
                 
                 $('#meterModal').modal('show');
             } else {
-                showNotification(response.message, 'danger');
+                showNotification(response.message, 'error');
             }
         },
         error: function() {
-            showNotification('เกิดข้อผิดพลาดในการโหลดข้อมูล', 'danger');
+            showNotification('เกิดข้อผิดพลาดในการโหลดข้อมูล', 'error');
         }
     });
 }
@@ -514,7 +519,7 @@ function generateMeterDetails(meter) {
     const type = meter.meter_type === 'electricity' ? 'ไฟฟ้า' : 'น้ำ';
     const unit = meter.meter_type === 'electricity' ? 'kWh' : 'm³';
     const status = meter.status ? 'ใช้งาน' : 'ไม่ใช้งาน';
-    const statusClass = meter.status ? 'success' : 'danger';
+    const statusClass = meter.status ? 'success' : 'error';
     
     let stats = '';
     if (meter.statistics) {
@@ -616,7 +621,7 @@ function saveMeter() {
                 }, 1500);
             } else {
                 $('#saveMeterBtn').prop('disabled', false).html('<i class="fas fa-save"></i> บันทึก');
-                showNotification(response.message, 'danger');
+                showNotification(response.message, 'error');
             }
         },
         error: function(xhr) {
@@ -625,7 +630,7 @@ function saveMeter() {
             if (xhr.responseJSON && xhr.responseJSON.message) {
                 message = xhr.responseJSON.message;
             }
-            showNotification(message, 'danger');
+            showNotification(message, 'error');
         }
     });
 }
@@ -662,11 +667,11 @@ function deleteMeter(id) {
                                     location.reload();
                                 }, 1500);
                             } else {
-                                showNotification(response.message, 'danger');
+                                showNotification(response.message, 'error');
                             }
                         },
                         error: function() {
-                            showNotification('เกิดข้อผิดพลาดในการลบข้อมูล', 'danger');
+                            showNotification('เกิดข้อผิดพลาดในการลบข้อมูล', 'error');
                         }
                     });
                 }
@@ -721,20 +726,40 @@ function exportData() {
 }
 
 function showNotification(message, type) {
-    const alertHtml = `
-        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-circle' : 'info-circle'}"></i>
-            ${message}
-            <button type="button" class="close" data-dismiss="alert">
-                <span>&times;</span>
-            </button>
-        </div>
-    `;
-    $('#notificationContainer').html(alertHtml);
-    
-    setTimeout(function() {
-        $('.alert').alert('close');
-    }, 5000);
+    // แปลง type ให้ตรงกับ toastr
+    const toastrType = type === 'error' ? 'error'
+                     : type === 'warning' ? 'warning'
+                     : type === 'info' ? 'info'
+                     : 'success';
+
+    if (typeof toastr !== 'undefined') {
+        toastr.options = {
+            closeButton: true,
+            progressBar: true,
+            positionClass: 'toast-top-right',
+            timeOut: 4000
+        };
+        toastr[toastrType](message);
+    } else {
+        // Fallback: สร้าง popup แบบ fixed ถ้าไม่มี toastr
+        const icons = { success: 'check-circle', error: 'times-circle', warning: 'exclamation-triangle', info: 'info-circle' };
+        const colors = { success: '#28a745', error: '#dc3545', warning: '#ffc107', info: '#17a2b8' };
+        const id = 'popup_' + Date.now();
+        const el = $(`
+            <div id="${id}" style="
+                position: fixed; top: 20px; right: 20px; z-index: 99999;
+                background: #fff; border-left: 5px solid ${colors[type] || colors.info};
+                border-radius: 4px; padding: 14px 20px; min-width: 280px; max-width: 380px;
+                box-shadow: 0 4px 16px rgba(0,0,0,0.18); display: flex; align-items: center; gap: 10px;
+            ">
+                <i class="fas fa-${icons[type] || icons.info}" style="color:${colors[type] || colors.info}; font-size:1.3em;"></i>
+                <span style="flex:1; font-size:.95em;">${message}</span>
+                <span style="cursor:pointer; font-size:1.1em; color:#888;" onclick="$('#${id}').fadeOut(300, function(){$(this).remove()})">&times;</span>
+            </div>
+        `);
+        $('body').append(el);
+        setTimeout(() => el.fadeOut(400, function(){ $(this).remove(); }), 4000);
+    }
 }
 </script>
 
@@ -749,8 +774,3 @@ function showNotification(message, type) {
     margin-bottom: 10px;
 }
 </style>
-
-<?php
-// Include footer
-require_once __DIR__ . '/../../includes/footer.php';
-?>
