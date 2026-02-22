@@ -367,7 +367,7 @@ $recentDocuments = $stmt->fetchAll();
                     <div class="icon">
                         <i class="fas fa-<?php echo $stat['icon']; ?>"></i>
                     </div>
-                    <a href="modules/<?php echo $key == 'energy' ? 'energy-water' : ($key == 'summary' ? 'summary-electricity' : $key); ?>/index.php" 
+                    <a href="modules/<?php echo $key == 'summary' ? 'summary-electricity' : ($key == 'boiler' ? 'boiler' : ($key == 'energy' ? 'energy-water' : ($key == 'air' ? 'air-compressor' : $key))); ?>/index.php" 
                        class="small-box-footer">
                         ดูรายละเอียด <i class="fas fa-arrow-circle-right"></i>
                     </a>
@@ -618,6 +618,11 @@ $recentDocuments = $stmt->fetchAll();
     </div>
 </section>
 
+<?php
+// Include footer
+require_once __DIR__ . '/includes/footer.php';
+?>
+
 <script>
 let monthlyChart = null;
 let pieChart = null;
@@ -678,6 +683,7 @@ function renderMonthlyChart(data) {
         monthlyChart.destroy();
     }
     
+    // ตั้งค่าพื้นฐานสำหรับกราฟแท่ง/เส้นแบบ Modern
     monthlyChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -686,64 +692,109 @@ function renderMonthlyChart(data) {
                 {
                     label: 'Air Compressor',
                     data: data.air,
-                    borderColor: '#17a2b8',
-                    backgroundColor: 'rgba(23, 162, 184, 0.1)',
-                    borderWidth: 2,
-                    tension: 0.4,
-                    fill: false
+                    borderColor: '#36D1DC',
+                    backgroundColor: 'rgba(54, 209, 220, 0.15)',
+                    borderWidth: 3,
+                    tension: 0.4, // ทำให้เส้นโค้งมน
+                    fill: true,   // เติมสีใต้เส้นกราฟ
+                    pointRadius: 0, // ซ่อนจุดเวลาปกติ
+                    pointHoverRadius: 6 // แสดงจุดเมื่อเอาเมาส์ชี้
                 },
                 {
                     label: 'Energy & Water',
                     data: data.energy,
-                    borderColor: '#28a745',
-                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                    borderWidth: 2,
+                    borderColor: '#2ecc71',
+                    backgroundColor: 'rgba(46, 204, 113, 0.15)',
+                    borderWidth: 3,
                     tension: 0.4,
-                    fill: false
+                    fill: true,
+                    pointRadius: 0,
+                    pointHoverRadius: 6
                 },
                 {
                     label: 'LPG',
                     data: data.lpg,
-                    borderColor: '#ffc107',
-                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
-                    borderWidth: 2,
+                    borderColor: '#f1c40f',
+                    backgroundColor: 'rgba(241, 196, 15, 0.15)',
+                    borderWidth: 3,
                     tension: 0.4,
-                    fill: false
+                    fill: true,
+                    pointRadius: 0,
+                    pointHoverRadius: 6
                 },
                 {
                     label: 'Boiler',
                     data: data.boiler,
-                    borderColor: '#dc3545',
-                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                    borderWidth: 2,
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231, 76, 60, 0.15)',
+                    borderWidth: 3,
                     tension: 0.4,
-                    fill: false
+                    fill: true,
+                    pointRadius: 0,
+                    pointHoverRadius: 6
                 },
                 {
                     label: 'Electricity',
                     data: data.summary,
-                    borderColor: '#6c757d',
-                    backgroundColor: 'rgba(108, 117, 125, 0.1)',
-                    borderWidth: 2,
+                    borderColor: '#9b59b6',
+                    backgroundColor: 'rgba(155, 89, 182, 0.15)',
+                    borderWidth: 3,
                     tension: 0.4,
-                    fill: false
+                    fill: true,
+                    pointRadius: 0,
+                    pointHoverRadius: 6
                 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false, // เพื่อให้ tooltip ขึ้นเวลาชี้บริเวณเส้น ไม่ต้องชี้ตรงจุดเป๊ะๆ
+            },
             plugins: {
                 legend: {
                     position: 'top',
+                    labels: {
+                        usePointStyle: true, // เปลี่ยนสัญลักษณ์ Legend เป็นวงกลม
+                        padding: 20,
+                        font: {
+                            family: "'Sarabun', sans-serif"
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    titleColor: '#2c3e50',
+                    bodyColor: '#2c3e50',
+                    borderColor: '#e9ecef',
+                    borderWidth: 1,
+                    padding: 12,
+                    boxPadding: 6,
+                    usePointStyle: true
                 }
             },
             scales: {
+                x: {
+                    grid: {
+                        display: false, // ซ่อนเส้นตารางแนวตั้งให้ดูคลีน
+                        drawBorder: false
+                    }
+                },
                 y: {
                     beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)',
+                        drawBorder: false,
+                        borderDash: [5, 5] // เส้นประแนวนอน
+                    },
                     title: {
                         display: true,
-                        text: 'ปริมาณการใช้งาน'
+                        text: 'ปริมาณการใช้งาน',
+                        font: {
+                            family: "'Sarabun', sans-serif"
+                        }
                     }
                 }
             }
@@ -761,7 +812,7 @@ function renderPieChart(data) {
     pieChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: ['Air Compressor', 'Energy & Water', 'LPG', 'Boiler', 'Electricity'],
+            labels: ['Air', 'Energy & Water', 'LPG', 'Boiler', 'Electricity'],
             datasets: [{
                 data: [
                     data.air,
@@ -771,30 +822,43 @@ function renderPieChart(data) {
                     data.summary
                 ],
                 backgroundColor: [
-                    '#17a2b8',
-                    '#28a745',
-                    '#ffc107',
-                    '#dc3545',
-                    '#6c757d'
+                    '#36D1DC',
+                    '#2ecc71',
+                    '#f1c40f',
+                    '#e74c3c',
+                    '#9b59b6'
                 ],
-                borderWidth: 0
+                borderWidth: 2,
+                borderColor: '#ffffff', // ใส่ขอบสีขาวให้แบ่งสัดส่วนชัดเจน
+                hoverOffset: 5 // ขยายเวลานำเมาส์ไปชี้
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            cutout: '75%', // ขยายรูกลางให้กว้างขึ้น ดูเป็นสไตล์ Modern
             plugins: {
                 legend: {
                     position: 'bottom',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20,
+                        font: {
+                            family: "'Sarabun', sans-serif"
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    titleColor: '#2c3e50',
+                    bodyColor: '#2c3e50',
+                    borderColor: '#e9ecef',
+                    borderWidth: 1,
+                    padding: 12
                 }
-            },
-            cutout: '60%'
+            }
         }
     });
 }
 </script>
 
-<?php
-// Include footer
-require_once __DIR__ . '/includes/footer.php';
-?>

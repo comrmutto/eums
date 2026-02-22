@@ -35,14 +35,22 @@ $db = getDB();
 
 // Get parameters
 $reportType = isset($_GET['report_type']) ? $_GET['report_type'] : 'daily';
-$startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
-$endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
 $machineId = isset($_GET['machine_id']) ? (int)$_GET['machine_id'] : 0;
 $compareWith = isset($_GET['compare_with']) ? $_GET['compare_with'] : 'previous';
 
-// Format dates for display
-$displayStartDate = date('d/m/Y', strtotime($startDate));
-$displayEndDate = date('d/m/Y', strtotime($endDate));
+$startDateInput = isset($_GET['start_date']) ? $_GET['start_date'] : date('01/m/Y');
+$endDateInput = isset($_GET['end_date']) ? $_GET['end_date'] : date('d/m/Y');
+
+// แปลงจาก DD/MM/YYYY เป็น YYYY-MM-DD เพื่อเอาไปค้นหาในฐานข้อมูล
+$s_parts = explode('/', $startDateInput);
+$startDate = count($s_parts) == 3 ? $s_parts[2] . '-' . $s_parts[1] . '-' . $s_parts[0] : date('Y-m-01');
+
+$e_parts = explode('/', $endDateInput);
+$endDate = count($e_parts) == 3 ? $e_parts[2] . '-' . $e_parts[1] . '-' . $e_parts[0] : date('Y-m-d');
+
+// Format dates for display (ส่งกลับไปโชว์ในช่อง Input)
+$displayStartDate = $startDateInput;
+$displayEndDate = $endDateInput;
 
 // Get all machines for dropdown
 $stmt = $db->query("SELECT * FROM mc_air WHERE status = 1 ORDER BY machine_code");
@@ -126,28 +134,28 @@ if ($machineId > 0) {
                         <div class="col-md-3" id="dateRangeDiv">
                             <div class="form-group">
                                 <label>วันที่เริ่มต้น</label>
-                                <div class="input-group date" id="startDatePicker" data-target-input="nearest">
-                                    <input type="text" class="form-control datetimepicker-input" 
-                                           name="start_date" id="startDate" 
-                                           value="<?php echo $displayStartDate; ?>" 
-                                           data-target="#startDatePicker">
-                                    <div class="input-group-append" data-target="#startDatePicker" data-toggle="datetimepicker">
-                                        <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                <div class="input-group">
+                                    <input type="text" class="form-control datepicker" 
+                                        name="start_date" id="startDate" 
+                                        value="<?php echo $displayStartDate; ?>" 
+                                        style="background-color: #ffffff; cursor: pointer;">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text"><i class="fa fa-calendar"></i></span>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="col-md-3" id="endDateDiv">
                             <div class="form-group">
                                 <label>วันที่สิ้นสุด</label>
-                                <div class="input-group date" id="endDatePicker" data-target-input="nearest">
-                                    <input type="text" class="form-control datetimepicker-input" 
-                                           name="end_date" id="endDate" 
-                                           value="<?php echo $displayEndDate; ?>" 
-                                           data-target="#endDatePicker">
-                                    <div class="input-group-append" data-target="#endDatePicker" data-toggle="datetimepicker">
-                                        <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                <div class="input-group">
+                                    <input type="text" class="form-control datepicker" 
+                                        name="end_date" id="endDate" 
+                                        value="<?php echo $displayEndDate; ?>" 
+                                        style="background-color: #ffffff; cursor: pointer;">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text"><i class="fa fa-calendar"></i></span>
                                     </div>
                                 </div>
                             </div>
@@ -237,7 +245,7 @@ if ($machineId > 0) {
                 </div>
             </div>
             <div class="col-lg-3 col-6">
-                <div class="small-box bg-danger">
+                <div class="small-box bg-error">
                     <div class="inner">
                         <h3><?php echo number_format($summary['max_usage'] ?? 0, 2); ?></h3>
                         <p>ค่าสูงสุด</p>
@@ -367,7 +375,7 @@ if ($machineId > 0) {
                                 <td class="text-right"><?php echo number_format($row['average'], 2); ?></td>
                                 <td class="text-right">
                                     <?php if (isset($row['change'])): ?>
-                                    <span class="badge badge-<?php echo $row['change'] > 0 ? 'danger' : ($row['change'] < 0 ? 'success' : 'secondary'); ?>">
+                                    <span class="badge badge-<?php echo $row['change'] > 0 ? 'error' : ($row['change'] < 0 ? 'success' : 'secondary'); ?>">
                                         <?php echo $row['change'] > 0 ? '+' : ''; ?><?php echo number_format($row['change'], 2); ?>
                                     </span>
                                     <?php else: ?>
@@ -376,7 +384,7 @@ if ($machineId > 0) {
                                 </td>
                                 <td class="text-right">
                                     <?php if (isset($row['change_percent'])): ?>
-                                    <span class="badge badge-<?php echo $row['change_percent'] > 0 ? 'danger' : ($row['change_percent'] < 0 ? 'success' : 'secondary'); ?>">
+                                    <span class="badge badge-<?php echo $row['change_percent'] > 0 ? 'error' : ($row['change_percent'] < 0 ? 'success' : 'secondary'); ?>">
                                         <?php echo $row['change_percent'] > 0 ? '+' : ''; ?><?php echo number_format($row['change_percent'], 1); ?>%
                                     </span>
                                     <?php else: ?>
@@ -405,21 +413,22 @@ if ($machineId > 0) {
     </div>
 </section>
 
+<?php
+// Include footer
+require_once __DIR__ . '/../../includes/footer.php';
+?>
+
 <script>
 let reportChart = null;
 
 $(document).ready(function() {
-    // Initialize date pickers
-    $('#startDatePicker').datetimepicker({
-        format: 'DD/MM/YYYY',
-        locale: 'th',
-        useCurrent: false
-    });
-    
-    $('#endDatePicker').datetimepicker({
-        format: 'DD/MM/YYYY',
-        locale: 'th',
-        useCurrent: false
+    // Initialize date pickers using the library already loaded in footer.php
+    $('.datepicker').datepicker({
+        format: 'dd/mm/yyyy',
+        autoclose: true,
+        language: 'th',
+        todayHighlight: true,
+        endDate: new Date()
     });
     
     // Initialize select2
@@ -541,12 +550,12 @@ function printReport() {
 function determineStatus($row) {
     if ($row['min_value'] && $row['max_value']) {
         if ($row['actual_value'] < $row['min_value'] || $row['actual_value'] > $row['max_value']) {
-            return ['class' => 'danger', 'text' => 'ไม่ผ่าน'];
+            return ['class' => 'error', 'text' => 'ไม่ผ่าน'];
         }
     } else {
         $deviation = abs(($row['actual_value'] - $row['standard_value']) / $row['standard_value'] * 100);
         if ($deviation > 10) {
-            return ['class' => 'danger', 'text' => 'ไม่ผ่าน'];
+            return ['class' => 'error', 'text' => 'ไม่ผ่าน'];
         }
     }
     return ['class' => 'success', 'text' => 'ผ่าน'];
@@ -847,7 +856,3 @@ function prepareStatisticsChartData($data) {
 }
 </style>
 
-<?php
-// Include footer
-require_once __DIR__ . '/../../includes/footer.php';
-?>

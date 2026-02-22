@@ -1010,12 +1010,15 @@ if (typeof jQuery === 'undefined') {
         /**
          * Show notification
          */
-        showNotification: function(message, type = 'info') {
-            // Check if Toastr is available
-            if (typeof toastr !== 'undefined') {
-                toastr[type](message);
-                return;
-            }
+showNotification: function(message, type = 'info') {
+    // เพิ่มบรรทัดนี้ เพื่อแปลงคำว่า danger เป็น error ให้ Toastr รู้จัก
+    if (type === 'danger') type = 'error';
+    
+    // Check if Toastr is available
+    if (typeof toastr !== 'undefined') {
+        toastr[type](message); // ตอนนี้บรรทัดนี้จะไม่พังแล้ว
+        return;
+    }
             
             // Fallback to alert div
             const notification = `

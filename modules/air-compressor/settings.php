@@ -180,6 +180,11 @@ $standards = $stmt->fetchAll();
     </div>
 </div>
 
+<?php
+// Include footer
+require_once __DIR__ . '/../../includes/footer.php';
+?>
+
 <script>
 $(document).ready(function() {
     $('.select2').select2({
@@ -239,15 +244,16 @@ function saveStandard() {
         url: 'ajax/save_standard.php',
         method: 'POST',
         data: formData,
-        success: function(response) {
+success: function(response) {
             if (response.success) {
                 $('#standardModal').modal('hide');
-                showNotification('บันทึกข้อมูลเรียบร้อย', 'success');
+                EUMS.showNotification('บันทึกข้อมูลเรียบร้อย', 'success');
                 setTimeout(function() {
                     location.reload();
                 }, 1500);
             } else {
-                showNotification(response.message, 'danger');
+                // ✅ เปลี่ยน 'danger' เป็น 'error'
+                EUMS.showNotification(response.message, 'error');
             }
         }
     });
@@ -259,22 +265,18 @@ function deleteStandard(id) {
             url: 'ajax/delete_standard.php',
             method: 'POST',
             data: { id: id },
-            success: function(response) {
-                if (response.success) {
-                    showNotification('ลบข้อมูลเรียบร้อย', 'success');
-                    setTimeout(function() {
-                        location.reload();
-                    }, 1500);
-                } else {
-                    showNotification(response.message, 'danger');
-                }
+success: function(response) {
+            if (response.success) {
+                EUMS.showNotification('ลบข้อมูลเรียบร้อย', 'success');
+                setTimeout(function() {
+                    location.reload();
+                }, 1500);
+            } else {
+                // ✅ เปลี่ยน 'danger' เป็น 'error'
+                EUMS.showNotification(response.message, 'error');
             }
+        }
         });
     }
 }
 </script>
-
-<?php
-// Include footer
-require_once __DIR__ . '/../../includes/footer.php';
-?>

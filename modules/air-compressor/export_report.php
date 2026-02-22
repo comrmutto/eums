@@ -22,14 +22,23 @@ require_once __DIR__ . '/../../includes/functions.php';
 // Get database connection
 $db = getDB();
 
+// แปลงวันที่จาก DD/MM/YYYY (datepicker) → Y-m-d (สำหรับ query DB)
+function convertDateInput($dateStr, $default) {
+    if (empty($dateStr)) return $default;
+    if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $dateStr, $m)) {
+        return $m[3] . '-' . $m[2] . '-' . $m[1];
+    }
+    return $dateStr;
+}
+
 // Get parameters
-$format = isset($_GET['format']) ? $_GET['format'] : 'excel';
+$format      = isset($_GET['format'])      ? $_GET['format']      : 'excel';
 $report_type = isset($_GET['report_type']) ? $_GET['report_type'] : 'daily';
-$start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
-$end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
-$month = isset($_GET['month']) ? (int)$_GET['month'] : (int)date('m');
-$year = isset($_GET['year']) ? (int)$_GET['year'] : (int)date('Y');
-$machine_id = isset($_GET['machine_id']) ? (int)$_GET['machine_id'] : 0;
+$machine_id  = isset($_GET['machine_id'])  ? (int)$_GET['machine_id'] : 0;
+$month       = isset($_GET['month'])       ? (int)$_GET['month']  : (int)date('m');
+$year        = isset($_GET['year'])        ? (int)$_GET['year']   : (int)date('Y');
+$start_date  = convertDateInput(isset($_GET['start_date']) ? $_GET['start_date'] : '', date('Y-m-01'));
+$end_date    = convertDateInput(isset($_GET['end_date'])   ? $_GET['end_date']   : '', date('Y-m-d'));
 
 // Set filename
 $filename = "air_compressor_report_{$report_type}_" . date('Ymd_His');
@@ -162,7 +171,7 @@ function getDailyData($db, $start_date, $end_date, $machine_id = 0) {
     
     return [
         'title' => 'รายงานการตรวจสอบ Air Compressor รายวัน',
-        'period' => 'ระหว่างวันที่ ' . date('d/m/Y', strtotime($start_date)) . ' ถึง ' . date('d/m/Y', strtotime($end_date)),
+        'period' => 'ระหว่างวันที่ ' . (DateTime::createFromFormat('Y-m-d', $start_date))->format('d/m/Y') . ' ถึง ' . (DateTime::createFromFormat('Y-m-d', $end_date))->format('d/m/Y'),
         'headers' => ['วันที่', 'รหัสเครื่อง', 'ชื่อเครื่อง', 'หัวข้อตรวจสอบ', 'ค่ามาตรฐาน', 'ค่าต่ำสุด', 'ค่าสูงสุด', 'หน่วย', 'ค่าที่วัดได้', 'สถานะ', 'ค่าเบี่ยงเบน', 'หมายเหตุ', 'ผู้บันทึก', 'วันที่บันทึก'],
         'data' => $records,
         'summary' => [
@@ -322,7 +331,7 @@ function getQualityData($db, $start_date, $end_date, $machine_id = 0) {
     
     return [
         'title' => 'รายงานคุณภาพ Air Compressor',
-        'period' => 'ระหว่างวันที่ ' . date('d/m/Y', strtotime($start_date)) . ' ถึง ' . date('d/m/Y', strtotime($end_date)),
+        'period' => 'ระหว่างวันที่ ' . (DateTime::createFromFormat('Y-m-d', $start_date))->format('d/m/Y') . ' ถึง ' . (DateTime::createFromFormat('Y-m-d', $end_date))->format('d/m/Y'),
         'headers' => ['รหัสเครื่อง', 'ชื่อเครื่อง', 'หัวข้อตรวจสอบ', 'ค่ามาตรฐาน', 'หน่วย', 'ทั้งหมด', 'ผ่าน', 'ไม่ผ่าน', 'อัตราผ่าน'],
         'data' => $records,
         'summary' => [
@@ -429,7 +438,7 @@ function getMachineDetailData($db, $start_date, $end_date, $machine_id) {
     
     return [
         'title' => 'รายงานรายละเอียดเครื่อง Air Compressor: ' . $machine['machine_name'],
-        'period' => 'ระหว่างวันที่ ' . date('d/m/Y', strtotime($start_date)) . ' ถึง ' . date('d/m/Y', strtotime($end_date)),
+        'period' => 'ระหว่างวันที่ ' . (DateTime::createFromFormat('Y-m-d', $start_date))->format('d/m/Y') . ' ถึง ' . (DateTime::createFromFormat('Y-m-d', $end_date))->format('d/m/Y'),
         'headers' => ['วันที่', 'หัวข้อตรวจสอบ', 'ค่ามาตรฐาน', 'หน่วย', 'ค่าที่วัดได้', 'สถานะ', 'ค่าเบี่ยงเบน', 'หมายเหตุ', 'ผู้บันทึก'],
         'data' => $records,
         'summary' => [
@@ -548,179 +557,241 @@ function getStatisticsData($db, $machine_id = 0) {
 }
 
 /**
- * Export to Excel
+ * Export to Excel (.xlsx) using PhpSpreadsheet
  */
+function colLetter($n) {
+    return \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($n);
+}
+
 function exportExcel($data, $filename) {
-    header('Content-Type: application/vnd.ms-excel');
-    header('Content-Disposition: attachment; filename="' . $filename . '.xls"');
-    header('Cache-Control: max-age=0');
-    
-    // Start HTML table (simple Excel format)
-    echo '<html>';
-    echo '<head>';
-    echo '<meta charset="UTF-8">';
-    echo '<title>' . $data['title'] . '</title>';
-    echo '<style>';
-    echo 'th { background-color: #f2f2f2; font-weight: bold; text-align: center; }';
-    echo 'td { text-align: right; }';
-    echo 'td.left { text-align: left; }';
-    echo '.pass { color: green; font-weight: bold; }';
-    echo '.fail { color: red; font-weight: bold; }';
-    echo '.summary { margin-top: 20px; }';
-    echo '</style>';
-    echo '</head>';
-    echo '<body>';
-    
-    // Title
-    echo '<h2>' . $data['title'] . '</h2>';
-    echo '<h3>' . $data['period'] . '</h3>';
-    echo '<p>วันที่ส่งออก: ' . date('d/m/Y H:i:s') . ' โดย: ' . $_SESSION['fullname'] . '</p>';
-    
-    // Data table
-    if (!empty($data['data'])) {
-        echo '<table border="1" cellpadding="5" cellspacing="0">';
-        echo '<thead><tr>';
-        foreach ($data['headers'] as $header) {
-            echo '<th>' . $header . '</th>';
-        }
-        echo '</tr></thead>';
-        echo '<tbody>';
-        
-        foreach ($data['data'] as $row) {
-            echo '<tr>';
-            foreach ($row as $key => $value) {
-                $class = 'left';
-                $style = '';
-                
-                // Check status for coloring
-                if (isset($row['status'])) {
-                    if ($row['status'] == 'ผ่าน') {
-                        $style = ' class="pass"';
-                    } elseif ($row['status'] == 'ไม่ผ่าน') {
-                        $style = ' class="fail"';
-                    }
-                }
-                
-                if (is_numeric($value) && !strpos($key, 'รหัส') && !strpos($key, 'ชื่อ') && !strpos($key, 'หัวข้อ') && !strpos($key, 'หน่วย')) {
-                    echo '<td class="text-right"' . $style . '>' . number_format($value, 2) . '</td>';
-                } else {
-                    echo '<td class="left"' . $style . '>' . $value . '</td>';
-                }
-            }
-            echo '</tr>';
-        }
-        
-        echo '</tbody>';
-        echo '</table>';
-    } else {
-        echo '<p>ไม่มีข้อมูล</p>';
+    $autoload = __DIR__ . '/../../vendor/autoload.php';
+    if (!file_exists($autoload)) {
+        exportCSV($data, $filename);
+        return;
     }
-    
-    // Summary
-    if (!empty($data['summary'])) {
-        echo '<div class="summary">';
-        echo '<h3>สรุป</h3>';
-        echo '<table border="1" cellpadding="5" cellspacing="0">';
-        foreach ($data['summary'] as $key => $value) {
-            echo '<tr>';
-            echo '<td><strong>' . $key . '</strong></td>';
-            if (is_numeric($value) && !strpos($value, '%')) {
-                echo '<td>' . number_format($value, 2) . '</td>';
+    require_once $autoload;
+
+    $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+    $spreadsheet->getDefaultStyle()->getFont()->setName('Arial')->setSize(10);
+
+    // ---- Style definitions ----
+    $stTitle = [
+        'font' => ['bold' => true, 'size' => 13, 'color' => ['argb' => 'FF1F3864']],
+    ];
+    $stSub = [
+        'font' => ['size' => 10, 'color' => ['argb' => 'FF595959']],
+    ];
+    $stHeader = [
+        'font'      => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
+        'fill'      => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                        'startColor' => ['argb' => 'FF2E75B6']],
+        'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                        'vertical'   => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+                        'wrapText'   => true],
+        'borders'   => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                                         'color' => ['argb' => 'FFB8CCE4']]],
+    ];
+    $stOdd  = [
+        'fill'    => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                      'startColor' => ['argb' => 'FFFFFFFF']],
+        'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                                       'color' => ['argb' => 'FFDDDDDD']]],
+        'alignment' => ['vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER],
+    ];
+    $stEven = [
+        'fill'    => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                      'startColor' => ['argb' => 'FFD9E1F2']],
+        'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                                       'color' => ['argb' => 'FFDDDDDD']]],
+        'alignment' => ['vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER],
+    ];
+    $stPass    = ['font' => ['bold' => true, 'color' => ['argb' => 'FF006400']]];
+    $stFail    = ['font' => ['bold' => true, 'color' => ['argb' => 'FFC00000']]];
+    $stSection = [
+        'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
+        'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                   'startColor' => ['argb' => 'FF375623']],
+        'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                                       'color' => ['argb' => 'FFDDDDDD']]],
+    ];
+
+    // ================================================================
+    // Sheet 1 : รายงานหลัก
+    // ================================================================
+    $sheet    = $spreadsheet->getActiveSheet()->setTitle('รายงาน');
+    $colCount = max(count($data['headers']), 2);
+    $lastCol  = colLetter($colCount);
+
+    // Row 1-3 : Title / Period / Export info
+    $sheet->mergeCells("A1:{$lastCol}1");
+    $sheet->getCell('A1')->setValue($data['title']);
+    $sheet->getStyle('A1')->applyFromArray($stTitle);
+    $sheet->getRowDimension(1)->setRowHeight(22);
+
+    $sheet->mergeCells("A2:{$lastCol}2");
+    $sheet->getCell('A2')->setValue($data['period']);
+    $sheet->getStyle('A2')->applyFromArray($stSub);
+
+    $sheet->mergeCells("A3:{$lastCol}3");
+    $sheet->getCell('A3')->setValue('วันที่ส่งออก: ' . date('d/m/Y H:i:s') . '  โดย: ' . ($_SESSION['fullname'] ?? ''));
+    $sheet->getStyle('A3')->applyFromArray($stSub);
+    $sheet->getRowDimension(4)->setRowHeight(6);
+
+    // Row 5 : Column headers
+    foreach ($data['headers'] as $i => $h) {
+        $sheet->getCell(colLetter($i + 1) . '5')->setValue($h);
+    }
+    $sheet->getStyle("A5:{$lastCol}5")->applyFromArray($stHeader);
+    $sheet->getRowDimension(5)->setRowHeight(22);
+
+    // Rows 6+ : Data
+    $row = 6;
+    foreach ($data['data'] as $rowData) {
+        $values  = array_values((array)$rowData);
+        $keys    = array_keys((array)$rowData);
+        $isEven  = ($row % 2 === 0);
+
+        foreach ($values as $ci => $val) {
+            $coord = colLetter($ci + 1) . $row;
+            $cell  = $sheet->getCell($coord);
+            if (is_numeric($val) && strpos((string)$val, '%') === false) {
+                $cell->setValue((float)$val);
+                $sheet->getStyle($coord)->getNumberFormat()->setFormatCode('#,##0.00');
+                $sheet->getStyle($coord)->getAlignment()
+                      ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
             } else {
-                echo '<td>' . $value . '</td>';
+                $cell->setValue($val);
             }
-            echo '</tr>';
         }
-        echo '</table>';
-        echo '</div>';
-    }
-    
-    // Machine statistics (for daily report)
-    if (isset($data['machine_stats']) && !empty($data['machine_stats'])) {
-        echo '<div class="summary">';
-        echo '<h3>สรุปแยกรายเครื่อง</h3>';
-        echo '<table border="1" cellpadding="5" cellspacing="0">';
-        echo '<tr><th>รหัสเครื่อง</th><th>ชื่อเครื่อง</th><th>จำนวน</th><th>ผ่าน</th><th>ไม่ผ่าน</th><th>อัตราผ่าน</th></tr>';
-        foreach ($data['machine_stats'] as $code => $stat) {
-            $rate = $stat['count'] > 0 ? round(($stat['pass'] / $stat['count']) * 100, 2) : 0;
-            echo '<tr>';
-            echo '<td>' . $code . '</td>';
-            echo '<td>' . $stat['name'] . '</td>';
-            echo '<td>' . $stat['count'] . '</td>';
-            echo '<td class="pass">' . $stat['pass'] . '</td>';
-            echo '<td class="fail">' . $stat['fail'] . '</td>';
-            echo '<td>' . $rate . '%</td>';
-            echo '</tr>';
+
+        $sheet->getStyle("A{$row}:{$lastCol}{$row}")->applyFromArray($isEven ? $stEven : $stOdd);
+
+        // สีผ่าน/ไม่ผ่าน
+        $si = array_search('status', $keys);
+        if ($si !== false) {
+            $sc = colLetter($si + 1) . $row;
+            if ($values[$si] === 'ผ่าน')     $sheet->getStyle($sc)->applyFromArray($stPass);
+            elseif ($values[$si] === 'ไม่ผ่าน') $sheet->getStyle($sc)->applyFromArray($stFail);
         }
-        echo '</table>';
-        echo '</div>';
+
+        $sheet->getRowDimension($row)->setRowHeight(18);
+        $row++;
     }
-    
-    // Machine totals (for quality report)
-    if (isset($data['machine_totals']) && !empty($data['machine_totals'])) {
-        echo '<div class="summary">';
-        echo '<h3>สรุปแยกรายเครื่อง</h3>';
-        echo '<table border="1" cellpadding="5" cellspacing="0">';
-        echo '<tr><th>รหัสเครื่อง</th><th>ชื่อเครื่อง</th><th>ผ่าน</th><th>ไม่ผ่าน</th><th>รวม</th><th>อัตราผ่าน</th></tr>';
-        foreach ($data['machine_totals'] as $code => $stat) {
-            $rate = $stat['total'] > 0 ? round(($stat['pass'] / $stat['total']) * 100, 2) : 0;
-            echo '<tr>';
-            echo '<td>' . $code . '</td>';
-            echo '<td>' . $stat['name'] . '</td>';
-            echo '<td class="pass">' . $stat['pass'] . '</td>';
-            echo '<td class="fail">' . $stat['fail'] . '</td>';
-            echo '<td>' . $stat['total'] . '</td>';
-            echo '<td>' . $rate . '%</td>';
-            echo '</tr>';
+
+    for ($c = 1; $c <= $colCount; $c++) {
+        $sheet->getColumnDimension(colLetter($c))->setAutoSize(true);
+    }
+
+    // สรุป (ต่อท้าย Sheet 1)
+    if (!empty($data['summary'])) {
+        $row += 2;
+        $sheet->mergeCells("A{$row}:B{$row}");
+        $sheet->getCell("A{$row}")->setValue('สรุป');
+        $sheet->getStyle("A{$row}:B{$row}")->applyFromArray($stSection);
+        $row++;
+        foreach ($data['summary'] as $k => $v) {
+            $sheet->getCell("A{$row}")->setValue($k);
+            $sheet->getStyle("A{$row}")->getFont()->setBold(true);
+            $cell = $sheet->getCell("B{$row}");
+            if (is_numeric($v) && strpos((string)$v, '%') === false) {
+                $cell->setValue((float)$v);
+                $sheet->getStyle("B{$row}")->getNumberFormat()->setFormatCode('#,##0.00');
+            } else {
+                $cell->setValue($v);
+            }
+            $sheet->getStyle("A{$row}:B{$row}")->getBorders()->getAllBorders()
+                  ->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+            $row++;
         }
-        echo '</table>';
-        echo '</div>';
     }
-    
-    // Trends (for statistics report)
-    if (isset($data['trends']) && !empty($data['trends'])) {
-        echo '<div class="summary">';
-        echo '<h3>แนวโน้ม 12 เดือนล่าสุด</h3>';
-        echo '<table border="1" cellpadding="5" cellspacing="0">';
-        echo '<tr><th>เดือน</th><th>จำนวนบันทึก</th><th>ค่ารวม</th><th>ค่าเฉลี่ย</th></tr>';
-        foreach ($data['trends'] as $trend) {
-            echo '<tr>';
-            echo '<td>' . $trend['month'] . '</td>';
-            echo '<td>' . $trend['records'] . '</td>';
-            echo '<td>' . number_format($trend['total'], 2) . '</td>';
-            echo '<td>' . number_format($trend['avg'], 2) . '</td>';
-            echo '</tr>';
+
+    // ================================================================
+    // Helper: สร้าง sheet ย่อยแบบตาราง
+    // ================================================================
+    $makeSheet = function($title, $headers, $rows) use ($spreadsheet, &$stHeader, &$stOdd, &$stEven, &$stTitle) {
+        $sh  = $spreadsheet->createSheet()->setTitle($title);
+        $n   = count($headers);
+        $lc  = colLetter($n);
+        $sh->mergeCells("A1:{$lc}1");
+        $sh->getCell('A1')->setValue($title);
+        $sh->getStyle('A1')->applyFromArray($stTitle);
+        $sh->getRowDimension(1)->setRowHeight(20);
+        foreach ($headers as $i => $h) {
+            $sh->getCell(colLetter($i + 1) . '2')->setValue($h);
         }
-        echo '</table>';
-        echo '</div>';
+        $sh->getStyle("A2:{$lc}2")->applyFromArray($stHeader);
+        $r = 3;
+        foreach ($rows as $rowArr) {
+            $sh->fromArray($rowArr, null, "A{$r}");
+            $sh->getStyle("A{$r}:{$lc}{$r}")->applyFromArray(($r % 2 === 0) ? $stEven : $stOdd);
+            $r++;
+        }
+        for ($c = 1; $c <= $n; $c++) {
+            $sh->getColumnDimension(colLetter($c))->setAutoSize(true);
+        }
+    };
+
+    // ================================================================
+    // Sheet: สรุปรายเครื่อง (daily)
+    // ================================================================
+    if (!empty($data['machine_stats'])) {
+        $rows = [];
+        foreach ($data['machine_stats'] as $code => $s) {
+            $rate  = $s['count'] > 0 ? round(($s['pass'] / $s['count']) * 100, 2) : 0;
+            $rows[] = [$code, $s['name'], $s['count'], $s['pass'], $s['fail'], $rate . '%'];
+        }
+        $makeSheet('สรุปรายเครื่อง', ['รหัสเครื่อง','ชื่อเครื่อง','จำนวนทั้งหมด','ผ่าน','ไม่ผ่าน','อัตราผ่าน'], $rows);
     }
-    
-    // Machine rankings (for statistics report)
-    if (isset($data['machine_rankings']) && !empty($data['machine_rankings'])) {
-        echo '<div class="summary">';
-        echo '<h3>อันดับเครื่อง</h3>';
-        echo '<table border="1" cellpadding="5" cellspacing="0">';
-        echo '<tr><th>อันดับ</th><th>รหัสเครื่อง</th><th>ชื่อเครื่อง</th><th>จำนวนบันทึก</th><th>ค่ารวม</th><th>อัตราผ่าน</th></tr>';
+
+    // ================================================================
+    // Sheet: สรุปรายเครื่อง (quality)
+    // ================================================================
+    if (!empty($data['machine_totals'])) {
+        $rows = [];
+        foreach ($data['machine_totals'] as $code => $s) {
+            $rate  = $s['total'] > 0 ? round(($s['pass'] / $s['total']) * 100, 2) : 0;
+            $rows[] = [$code, $s['name'], $s['pass'], $s['fail'], $s['total'], $rate . '%'];
+        }
+        $makeSheet('สรุปรายเครื่อง', ['รหัสเครื่อง','ชื่อเครื่อง','ผ่าน','ไม่ผ่าน','รวม','อัตราผ่าน'], $rows);
+    }
+
+    // ================================================================
+    // Sheet: แนวโน้ม
+    // ================================================================
+    if (!empty($data['trends'])) {
+        $rows = [];
+        foreach ($data['trends'] as $t) {
+            $rows[] = [$t['month'], $t['records'], round($t['total'], 2), round($t['avg'], 2)];
+        }
+        $makeSheet('แนวโน้ม', ['เดือน','จำนวนบันทึก','ค่ารวม','ค่าเฉลี่ย'], $rows);
+    }
+
+    // ================================================================
+    // Sheet: อันดับเครื่อง
+    // ================================================================
+    if (!empty($data['machine_rankings'])) {
+        $rows = [];
         $rank = 1;
-        foreach ($data['machine_rankings'] as $machine) {
-            $rate = $machine['records'] > 0 ? round(($machine['pass_count'] / $machine['records']) * 100, 2) : 0;
-            echo '<tr>';
-            echo '<td>' . $rank++ . '</td>';
-            echo '<td>' . $machine['machine_code'] . '</td>';
-            echo '<td>' . $machine['machine_name'] . '</td>';
-            echo '<td>' . $machine['records'] . '</td>';
-            echo '<td>' . number_format($machine['total'], 2) . '</td>';
-            echo '<td>' . $rate . '%</td>';
-            echo '</tr>';
+        foreach ($data['machine_rankings'] as $m) {
+            $rate  = $m['records'] > 0 ? round(($m['pass_count'] / $m['records']) * 100, 2) : 0;
+            $rows[] = [$rank++, $m['machine_code'], $m['machine_name'], $m['records'], round($m['total'], 2), $rate . '%'];
         }
-        echo '</table>';
-        echo '</div>';
+        $makeSheet('อันดับเครื่อง', ['อันดับ','รหัสเครื่อง','ชื่อเครื่อง','จำนวนบันทึก','ค่ารวม','อัตราผ่าน'], $rows);
     }
-    
-    echo '</body>';
-    echo '</html>';
-    
-    // Log export
+
+    // ================================================================
+    // Output
+    // ================================================================
+    $spreadsheet->setActiveSheetIndex(0);
+
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment; filename="' . $filename . '.xlsx"');
+    header('Cache-Control: max-age=0');
+    header('Expires: 0');
+    header('Pragma: public');
+
+    (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save('php://output');
+
     logActivity($_SESSION['user_id'], 'export_report', "ส่งออกรายงาน Air Compressor ($filename)");
     exit();
 }

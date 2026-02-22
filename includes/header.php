@@ -64,9 +64,6 @@ $userRole = $_SESSION['user_role'] ?? 'viewer';
     <!-- Toastr CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     
-    <!-- Chart.js CSS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.min.js"></script>
-    
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/eums/assets/css/styles.css">
     

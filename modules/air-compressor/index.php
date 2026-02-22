@@ -243,7 +243,7 @@ foreach ($records as $record) {
                     กราฟสรุปปริมาณการใช้งาน
                 </h3>
                 <div class="card-tools">
-                    <select id="chartMachine" class="form-control form-control-sm" style="width: 200px;">
+                    <select id="chartMachine" class="form-control form-control-sm" style="width: 200px; height: 40px;">
                         <option value="all">ทุกเครื่องจักร</option>
                         <?php foreach ($machines as $machine): ?>
                             <option value="<?php echo $machine['id']; ?>">
@@ -255,7 +255,7 @@ foreach ($records as $record) {
             </div>
             <div class="card-body">
                 <div class="chart-container">
-                    <canvas id="usageChart" style="min-height: 400px; height: 400px; max-height: 400px;"></canvas>
+                    <canvas id="usageChart" style="min-height: 300px; height: 300px; max-height: 300px;"></canvas>
                 </div>
             </div>
         </div>
@@ -357,11 +357,6 @@ foreach ($records as $record) {
                                 </td>
                             </tr>
                             <?php endforeach; ?>
-                            <?php if (empty($records)): ?>
-                            <tr>
-                                <td colspan="10" class="text-center">ไม่พบข้อมูล</td>
-                            </tr>
-                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -457,6 +452,11 @@ foreach ($records as $record) {
         </div>
     </div>
 </div>
+
+<?php
+// Include footer
+require_once __DIR__ . '/../../includes/footer.php';
+?>
 
 <!-- Include module specific JS -->
 <script>
@@ -601,21 +601,25 @@ function loadInspectionItems(machineId) {
     }
     
     $.ajax({
-        url: '../../api/get_machines.php',
+        // 1. แก้ไข URL ให้ชี้มาที่ไฟล์ที่ถูกต้อง
+        url: 'ajax/get_inspection_items.php', 
         method: 'GET',
+        // 2. ส่งไปแค่ machine_id ตามที่ PHP ต้องการ
         data: {
-            module: 'air',
-            action: 'with_standards',
             machine_id: machineId
         },
         success: function(response) {
+            // 3. แก้ไขการวนลูปจาก response.data.standards เป็น response.data เฉยๆ
             if (response.success && response.data) {
                 let options = '<option value="">เลือกหัวข้อตรวจสอบ</option>';
-                response.data.standards.forEach(function(item) {
+                response.data.forEach(function(item) {
                     options += `<option value="${item.id}" data-standard="${item.standard_value}" data-min="${item.min_value}" data-max="${item.max_value}" data-unit="${item.unit}">${item.inspection_item}</option>`;
                 });
                 $('#inspectionItemId').html(options);
             }
+        },
+        error: function() {
+            EUMS.showNotification('เกิดข้อผิดพลาดในการดึงข้อมูลหัวข้อตรวจสอบ', 'error');
         }
     });
 }
@@ -721,12 +725,10 @@ function saveRecord() {
         success: function(response) {
             if (response.success) {
                 $('#recordModal').modal('hide');
-                showNotification('บันทึกข้อมูลเรียบร้อย', 'success');
-                setTimeout(function() {
-                    location.reload();
-                }, 1500);
+                EUMS.showNotification('บันทึกข้อมูลเรียบร้อย', 'success'); // เติม EUMS.
+                setTimeout(function() { location.reload(); }, 1500);
             } else {
-                showNotification(response.message, 'danger');
+                EUMS.showNotification(response.message, 'error'); // เติม EUMS. และเปลี่ยน 'error'
             }
         }
     });
@@ -738,18 +740,16 @@ function deleteRecord(id) {
             url: 'ajax/delete_record.php',
             method: 'POST',
             data: { id: id },
-            success: function(response) {
-                if (response.success) {
-                    showNotification('ลบข้อมูลเรียบร้อย', 'success');
-                    setTimeout(function() {
-                        location.reload();
-                    }, 1500);
-                } else {
-                    showNotification(response.message, 'danger');
-                }
+           success: function(response) {
+            if (response.success) {
+                EUMS.showNotification('ลบข้อมูลเรียบร้อย', 'success'); // เติม EUMS.
+                setTimeout(function() { location.reload(); }, 1500);
+            } else {
+                EUMS.showNotification(response.message, 'error'); // เติม EUMS. และเปลี่ยน 'error'
             }
-        });
-    }
+        }
+    });
+}
 }
 
 function updateDocument() {
@@ -760,11 +760,11 @@ function updateDocument() {
         url: 'ajax/update_document.php',
         method: 'POST',
         data: formData,
-        success: function(response) {
+    success: function(response) {
             if (response.success) {
-                showNotification('อัปเดตเอกสารเรียบร้อย', 'success');
+                EUMS.showNotification('อัปเดตเอกสารเรียบร้อย', 'success'); // เติม EUMS.
             } else {
-                showNotification(response.message, 'danger');
+                EUMS.showNotification(response.message, 'error'); // เติม EUMS. และเปลี่ยน 'error'
             }
         }
     });
@@ -774,8 +774,3 @@ function exportData() {
     window.location.href = 'export.php?month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>';
 }
 </script>
-
-<?php
-// Include footer
-require_once __DIR__ . '/../../includes/footer.php';
-?>

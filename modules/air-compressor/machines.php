@@ -90,14 +90,6 @@ $machines = $stmt->fetchAll();
                                 </td>
                             </tr>
                             <?php endforeach; ?>
-                            
-                            <?php if (empty($machines)): ?>
-                            <tr>
-                                <td colspan="9" class="text-center text-muted">
-                                    <i class="fas fa-info-circle"></i> ไม่พบข้อมูลเครื่องจักร
-                                </td>
-                            </tr>
-                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -194,7 +186,10 @@ $machines = $stmt->fetchAll();
     </div>
 </div>
 
-<!-- ลบ script tags ซ้ำออก (jQuery/Bootstrap/AdminLTE โหลดใน footer.php แล้ว) -->
+<?php
+// Include footer
+require_once __DIR__ . '/../../includes/footer.php';
+?>
 
 <script>
 // ตรวจสอบว่า jQuery โหลดหรือไม่
@@ -215,7 +210,7 @@ $(document).ready(function() {
         }
         $('#machinesTable').DataTable({
             language: {
-                url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/th.json'
+                url: 'https://cdn.datatables.net/plug-ins/1.11.5/i18n/th.json'
             },
             pageLength: 25,
             order: [[0, 'asc']]
@@ -506,7 +501,3 @@ function showNotification(message, type) {
 }
 </script>
 
-<?php
-// Include footer
-require_once __DIR__ . '/../../includes/footer.php';
-?>
