@@ -25,8 +25,30 @@ $db = getDB();
 // Get parameters
 $format = isset($_GET['format']) ? $_GET['format'] : 'excel';
 $report_type = isset($_GET['report_type']) ? $_GET['report_type'] : 'daily';
-$start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
-$end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
+
+// ---------------------------------------------------------
+// เพิ่มฟังก์ชันแปลงวันที่ DD/MM/YYYY เป็น YYYY-MM-DD 
+function formatDateForDB($date_str) {
+    if (strpos($date_str, '/') !== false) {
+        $parts = explode('/', $date_str);
+        if (count($parts) == 3) {
+            $year = (int)$parts[2];
+            // เผื่อกรณีมีการส่งมาเป็นปี พ.ศ. ให้แปลงเป็น ค.ศ.
+            if ($year > 2500) $year -= 543; 
+            return sprintf('%04d-%02d-%02d', $year, $parts[1], $parts[0]);
+        }
+    }
+    return $date_str;
+}
+
+// รับค่าวันที่และแปลง format ให้ Database เข้าใจ
+$raw_start = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
+$raw_end = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
+
+$start_date = formatDateForDB($raw_start);
+$end_date = formatDateForDB($raw_end);
+// ---------------------------------------------------------
+
 $month = isset($_GET['month']) ? (int)$_GET['month'] : (int)date('m');
 $year = isset($_GET['year']) ? (int)$_GET['year'] : (int)date('Y');
 $meter_id = isset($_GET['meter_id']) ? (int)$_GET['meter_id'] : 0;
@@ -483,9 +505,166 @@ function getSummaryData($db, $start_date, $end_date) {
 }
 
 /**
- * Export to Excel
+ * Export to Excel (.xlsx) using PhpSpreadsheet
  */
 function exportExcel($data, $filename) {
+    // กำหนด Path ของ autoload (เหมือนกับตอนเรียกใช้ mPDF)
+    $autoload_path = __DIR__ . '/../../vendor/autoload.php';
+    
+    if (file_exists($autoload_path)) {
+        require_once $autoload_path;
+    }
+    
+    // ตรวจสอบว่ามีคลาส PhpSpreadsheet หรือไม่
+    if (!class_exists('\PhpOffice\PhpSpreadsheet\Spreadsheet')) {
+        // ถ้าไม่มีไลบรารี ให้กลับไปใช้แบบ HTML จำแลงเป็น xls (Legacy)
+        exportExcelLegacy($data, $filename);
+        return;
+    }
+
+    // สร้าง Spreadsheet object
+    $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+    
+    // ==========================================
+    // SHEET 1: ข้อมูลรายละเอียด (Data)
+    // ==========================================
+    $sheet1 = $spreadsheet->getActiveSheet();
+    $sheet1->setTitle('ข้อมูลรายละเอียด');
+
+    // หัวรายงาน
+    $sheet1->setCellValue('A1', $data['title']);
+    $sheet1->getStyle('A1')->getFont()->setBold(true)->setSize(16);
+    $sheet1->setCellValue('A2', $data['period']);
+    $sheet1->setCellValue('A3', 'วันที่ส่งออก: ' . date('d/m/Y H:i:s') . ' โดย: ' . $_SESSION['fullname']);
+
+    // สร้าง Header ของตาราง
+    $col = 'A';
+    foreach ($data['headers'] as $header) {
+        $sheet1->setCellValue($col . '5', $header);
+        
+        // ตกแต่ง Header
+        $sheet1->getStyle($col . '5')->getFont()->setBold(true)->getColor()->setARGB('FFFFFFFF');
+        $sheet1->getStyle($col . '5')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+               ->getStartColor()->setARGB('FF4CAF50'); // สีเขียว
+        $sheet1->getStyle($col . '5')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        $col++;
+    }
+
+    // ใส่ข้อมูล
+    $rowNum = 6;
+    if (!empty($data['data'])) {
+        foreach ($data['data'] as $row) {
+            $col = 'A';
+            foreach ($row as $key => $value) {
+                // เช็คว่าเป็นตัวเลขและไม่ใช่รหัส/วันที่ เพื่อจัดฟอร์แมตตัวเลข 2 ตำแหน่ง
+                if (is_numeric($value) && !strpos($key, 'วันที่') && !strpos($key, 'รหัส') && !strpos($key, 'ชื่อ') && !strpos($key, 'ตำแหน่ง')) {
+                    $sheet1->setCellValue($col . $rowNum, $value);
+                    $sheet1->getStyle($col . $rowNum)->getNumberFormat()->setFormatCode('#,##0.00');
+                } else {
+                    $sheet1->setCellValueExplicit($col . $rowNum, $value, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                }
+                $col++;
+            }
+            $rowNum++;
+        }
+    } else {
+        $sheet1->setCellValue('A6', 'ไม่มีข้อมูล');
+    }
+
+    // ปรับขนาดความกว้างคอลัมน์อัตโนมัติ Sheet 1
+    $lastCol = $sheet1->getHighestColumn();
+    for ($c = 'A'; $c <= $lastCol; $c++) {
+        $sheet1->getColumnDimension($c)->setAutoSize(true);
+    }
+
+    // ==========================================
+    // SHEET 2: สรุปข้อมูลรวม (Summary)
+    // ==========================================
+    $sheet2 = $spreadsheet->createSheet();
+    $sheet2->setTitle('สรุปข้อมูลรวม');
+
+    $sheet2->setCellValue('A1', 'สรุปข้อมูลการใช้พลังงาน');
+    $sheet2->getStyle('A1')->getFont()->setBold(true)->setSize(16);
+
+    $rowNum = 3;
+    if (!empty($data['summary'])) {
+        foreach ($data['summary'] as $key => $value) {
+            $sheet2->setCellValue('A' . $rowNum, $key);
+            $sheet2->getStyle('A' . $rowNum)->getFont()->setBold(true);
+            
+            if (is_numeric($value) && !strpos($key, 'วันที่') && !strpos($key, 'วัน')) {
+                $sheet2->setCellValue('B' . $rowNum, $value);
+                $sheet2->getStyle('B' . $rowNum)->getNumberFormat()->setFormatCode('#,##0.00');
+            } else {
+                $sheet2->setCellValueExplicit('B' . $rowNum, $value, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            }
+            $rowNum++;
+        }
+    }
+
+    // เพิ่มส่วนสรุปแยกรายมิเตอร์ (ถ้ามี)
+    $rowNum += 2;
+    if (isset($data['meter_stats']) && !empty($data['meter_stats'])) {
+        $sheet2->setCellValue('A' . $rowNum, 'สรุปแยกรายมิเตอร์');
+        $sheet2->getStyle('A' . $rowNum)->getFont()->setBold(true)->setSize(14);
+        $rowNum++;
+
+        // Header
+        $headers = ['รหัสมิเตอร์', 'ประเภท', 'จำนวนครั้ง', 'ปริมาณรวม'];
+        $col = 'A';
+        foreach ($headers as $header) {
+            $sheet2->setCellValue($col . $rowNum, $header);
+            $sheet2->getStyle($col . $rowNum)->getFont()->setBold(true)->getColor()->setARGB('FFFFFFFF');
+            $sheet2->getStyle($col . $rowNum)->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                   ->getStartColor()->setARGB('FF17A2B8'); // สีฟ้า (Info)
+            $col++;
+        }
+        $rowNum++;
+
+        // Data
+        foreach ($data['meter_stats'] as $code => $stat) {
+            $sheet2->setCellValueExplicit('A' . $rowNum, $code, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet2->setCellValueExplicit('B' . $rowNum, $stat['type'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet2->setCellValue('C' . $rowNum, $stat['count']);
+            
+            $sheet2->setCellValue('D' . $rowNum, $stat['total']);
+            $sheet2->getStyle('D' . $rowNum)->getNumberFormat()->setFormatCode('#,##0.00');
+            $rowNum++;
+        }
+    }
+
+    // ปรับขนาดความกว้างคอลัมน์อัตโนมัติ Sheet 2
+    $sheet2->getColumnDimension('A')->setAutoSize(true);
+    $sheet2->getColumnDimension('B')->setAutoSize(true);
+    $sheet2->getColumnDimension('C')->setAutoSize(true);
+    $sheet2->getColumnDimension('D')->setAutoSize(true);
+
+    // กำหนดให้ Sheet 1 เป็น Sheet ที่เปิดขึ้นมาตอนแรก
+    $spreadsheet->setActiveSheetIndex(0);
+
+    // เคลียร์ Buffer เพื่อป้องกันปัญหาไฟล์เสีย
+    if (ob_get_contents()) ob_end_clean();
+
+    // ==========================================
+    // ส่งออกไฟล์ .xlsx
+    // ==========================================
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment;filename="' . $filename . '.xlsx"');
+    header('Cache-Control: max-age=0');
+    
+    $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+    $writer->save('php://output');
+    
+    // Log activity
+    logActivity($_SESSION['user_id'], 'export_report', "ส่งออกรายงาน Energy & Water เป็น Excel ($filename)");
+    exit();
+}
+
+/**
+ * Fallback Excel Export (HTML based .xls)
+ * หากเซิร์ฟเวอร์ไม่ได้ติดตั้ง PhpSpreadsheet ระบบจะเรียกใช้ฟังก์ชันนี้แทน
+ */
+function exportExcelLegacy($data, $filename) {
     header('Content-Type: application/vnd.ms-excel');
     header('Content-Disposition: attachment; filename="' . $filename . '.xls"');
     header('Cache-Control: max-age=0');
@@ -580,326 +759,6 @@ function exportExcel($data, $filename) {
             echo '<td class="' . $class . '">' . $stat['type'] . '</td>';
             echo '<td>' . $stat['count'] . '</td>';
             echo '<td>' . number_format($stat['total'], 2) . '</td>';
-            echo '</tr>';
-        }
-        echo '</table>';
-        echo '</div>';
-    }
-    
-    echo '</body>';
-    echo '</html>';
-    
-    // Log export
-    logActivity($_SESSION['user_id'], 'export_report', "ส่งออกรายงาน Energy & Water ($filename)");
-    exit();
-}
-
-/**
- * Export to CSV
- */
-function exportCSV($data, $filename) {
-    header('Content-Type: text/csv; charset=utf-8');
-    header('Content-Disposition: attachment; filename="' . $filename . '.csv"');
-    
-    $output = fopen('php://output', 'w');
-    
-    // Add BOM for UTF-8 Thai
-    fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
-    
-    // Title
-    fputcsv($output, [$data['title']]);
-    fputcsv($output, [$data['period']]);
-    fputcsv($output, ['วันที่ส่งออก: ' . date('d/m/Y H:i:s') . ' โดย: ' . $_SESSION['fullname']]);
-    fputcsv($output, []);
-    
-    // Headers
-    fputcsv($output, $data['headers']);
-    
-    // Data
-    foreach ($data['data'] as $row) {
-        $row_data = [];
-        foreach ($row as $value) {
-            if (is_numeric($value)) {
-                $row_data[] = number_format($value, 2);
-            } else {
-                $row_data[] = $value;
-            }
-        }
-        fputcsv($output, $row_data);
-    }
-    
-    // Summary
-    fputcsv($output, []);
-    fputcsv($output, ['สรุป']);
-    foreach ($data['summary'] as $key => $value) {
-        if (is_numeric($value) && !strpos($key, 'วันที่') && !strpos($key, 'วัน')) {
-            fputcsv($output, [$key, number_format($value, 2)]);
-        } else {
-            fputcsv($output, [$key, $value]);
-        }
-    }
-    
-    // Meter statistics (for daily report)
-    if (isset($data['meter_stats']) && !empty($data['meter_stats'])) {
-        fputcsv($output, []);
-        fputcsv($output, ['สรุปแยกรายมิเตอร์']);
-        fputcsv($output, ['รหัสมิเตอร์', 'ประเภท', 'จำนวนครั้ง', 'ปริมาณรวม']);
-        foreach ($data['meter_stats'] as $code => $stat) {
-            fputcsv($output, [$code, $stat['type'], $stat['count'], number_format($stat['total'], 2)]);
-        }
-    }
-    
-    fclose($output);
-    
-    // Log export
-    logActivity($_SESSION['user_id'], 'export_report', "ส่งออกรายงาน Energy & Water ($filename)");
-    exit();
-}
-
-/**
- * Export to PDF (using mPDF library)
- */
-function exportPDF($data, $filename, $report_type) {
-    // Check if mPDF library exists
-    $mpdf_path = __DIR__ . '/../../vendor/autoload.php';
-    
-    if (!file_exists($mpdf_path)) {
-        // Fallback to HTML if mPDF not installed
-        exportHTML($data, $filename);
-        return;
-    }
-    
-    require_once $mpdf_path;
-    
-    // Create PDF content
-    $html = '<html>';
-    $html .= '<head>';
-    $html .= '<meta charset="UTF-8">';
-    $html .= '<style>';
-    $html .= 'body { font-family: "Garuda", sans-serif; }';
-    $html .= 'h2 { color: #333; }';
-    $html .= 'h3 { color: #666; }';
-    $html .= 'table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }';
-    $html .= 'th { background-color: #4CAF50; color: white; padding: 8px; text-align: center; }';
-    $html .= 'td { padding: 6px; border: 1px solid #ddd; }';
-    $html .= 'tr:nth-child(even) { background-color: #f2f2f2; }';
-    $html .= '.electricity { color: #ffc107; font-weight: bold; }';
-    $html .= '.water { color: #17a2b8; font-weight: bold; }';
-    $html .= '.summary { background-color: #e7f3ff; padding: 10px; border-radius: 5px; margin-top: 20px; }';
-    $html .= '.footer { text-align: center; margin-top: 30px; font-size: 12px; color: #999; }';
-    $html .= '.text-right { text-align: right; }';
-    $html .= '.text-center { text-align: center; }';
-    $html .= '</style>';
-    $html .= '</head>';
-    $html .= '<body>';
-    
-    // Title
-    $html .= '<h2>' . $data['title'] . '</h2>';
-    $html .= '<h3>' . $data['period'] . '</h3>';
-    $html .= '<p>วันที่ส่งออก: ' . date('d/m/Y H:i:s') . ' โดย: ' . $_SESSION['fullname'] . '</p>';
-    
-    // Data table
-    if (!empty($data['data'])) {
-        $html .= '<table>';
-        $html .= '<thead><tr>';
-        foreach ($data['headers'] as $header) {
-            $html .= '<th>' . $header . '</th>';
-        }
-        $html .= '</tr></thead>';
-        $html .= '<tbody>';
-        
-        foreach ($data['data'] as $row) {
-            $html .= '<tr>';
-            foreach ($row as $key => $value) {
-                $class = 'text-right';
-                $style = '';
-                
-                if (isset($row['meter_type_text'])) {
-                    if ($row['meter_type_text'] == 'ไฟฟ้า') {
-                        $style = ' class="electricity"';
-                    } elseif ($row['meter_type_text'] == 'น้ำ') {
-                        $style = ' class="water"';
-                    }
-                }
-                
-                if (is_numeric($value) && !strpos($key, 'วันที่') && !strpos($key, 'รหัส') && !strpos($key, 'ชื่อ') && !strpos($key, 'ตำแหน่ง')) {
-                    $html .= '<td class="text-right"' . $style . '>' . number_format($value, 2) . '</td>';
-                } else {
-                    $html .= '<td class="text-center"' . $style . '>' . $value . '</td>';
-                }
-            }
-            $html .= '</tr>';
-        }
-        
-        $html .= '</tbody>';
-        $html .= '</table>';
-    } else {
-        $html .= '<p>ไม่มีข้อมูล</p>';
-    }
-    
-    // Summary
-    if (!empty($data['summary'])) {
-        $html .= '<div class="summary">';
-        $html .= '<h3>สรุป</h3>';
-        $html .= '<table>';
-        foreach ($data['summary'] as $key => $value) {
-            $html .= '<tr>';
-            $html .= '<td><strong>' . $key . '</strong></td>';
-            if (is_numeric($value) && !strpos($key, 'วันที่') && !strpos($key, 'วัน')) {
-                $html .= '<td class="text-right">' . number_format($value, 2) . '</td>';
-            } else {
-                $html .= '<td class="text-right">' . $value . '</td>';
-            }
-            $html .= '</tr>';
-        }
-        $html .= '</table>';
-        $html .= '</div>';
-    }
-    
-    // Meter statistics (for daily report)
-    if (isset($data['meter_stats']) && !empty($data['meter_stats'])) {
-        $html .= '<div class="summary">';
-        $html .= '<h3>สรุปแยกรายมิเตอร์</h3>';
-        $html .= '<table>';
-        $html .= '<tr><th>รหัสมิเตอร์</th><th>ประเภท</th><th>จำนวนครั้ง</th><th>ปริมาณรวม</th></tr>';
-        foreach ($data['meter_stats'] as $code => $stat) {
-            $class = $stat['type'] == 'ไฟฟ้า' ? 'electricity' : 'water';
-            $html .= '<tr>';
-            $html .= '<td>' . $code . '</td>';
-            $html .= '<td class="' . $class . '">' . $stat['type'] . '</td>';
-            $html .= '<td class="text-right">' . $stat['count'] . '</td>';
-            $html .= '<td class="text-right">' . number_format($stat['total'], 2) . '</td>';
-            $html .= '</tr>';
-        }
-        $html .= '</table>';
-        $html .= '</div>';
-    }
-    
-    // Footer
-    $html .= '<div class="footer">';
-    $html .= 'Engineering Utility Monitoring System (EUMS)';
-    $html .= '</div>';
-    
-    $html .= '</body>';
-    $html .= '</html>';
-    
-    // Create PDF
-    $mpdf = new \Mpdf\Mpdf([
-        'mode' => 'utf-8',
-        'format' => 'A4',
-        'default_font' => 'garuda',
-        'margin_top' => 20,
-        'margin_bottom' => 20,
-        'margin_left' => 15,
-        'margin_right' => 15
-    ]);
-    
-    $mpdf->WriteHTML($html);
-    $mpdf->Output($filename . '.pdf', 'D');
-    
-    // Log export
-    logActivity($_SESSION['user_id'], 'export_report', "ส่งออกรายงาน Energy & Water ($filename)");
-    exit();
-}
-
-/**
- * Fallback HTML export
- */
-function exportHTML($data, $filename) {
-    header('Content-Type: text/html; charset=utf-8');
-    header('Content-Disposition: attachment; filename="' . $filename . '.html"');
-    
-    echo '<!DOCTYPE html>';
-    echo '<html>';
-    echo '<head>';
-    echo '<meta charset="UTF-8">';
-    echo '<title>' . $data['title'] . '</title>';
-    echo '<style>';
-    echo 'body { font-family: "Sarabun", sans-serif; margin: 20px; }';
-    echo 'h2 { color: #333; }';
-    echo 'table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }';
-    echo 'th { background-color: #4CAF50; color: white; padding: 8px; }';
-    echo 'td { padding: 6px; border: 1px solid #ddd; }';
-    echo 'tr:nth-child(even) { background-color: #f2f2f2; }';
-    echo '.electricity { color: #ffc107; font-weight: bold; }';
-    echo '.water { color: #17a2b8; font-weight: bold; }';
-    echo '.summary { margin-top: 20px; padding: 10px; background-color: #e7f3ff; border-radius: 5px; }';
-    echo '.text-right { text-align: right; }';
-    echo '.text-center { text-align: center; }';
-    echo '</style>';
-    echo '</head>';
-    echo '<body>';
-    
-    echo '<h2>' . $data['title'] . '</h2>';
-    echo '<h3>' . $data['period'] . '</h3>';
-    echo '<p>วันที่ส่งออก: ' . date('d/m/Y H:i:s') . ' โดย: ' . $_SESSION['fullname'] . '</p>';
-    
-    if (!empty($data['data'])) {
-        echo '<table>';
-        echo '<thead><tr>';
-        foreach ($data['headers'] as $header) {
-            echo '<th>' . $header . '</th>';
-        }
-        echo '</tr></thead>';
-        echo '<tbody>';
-        
-        foreach ($data['data'] as $row) {
-            echo '<tr>';
-            foreach ($row as $key => $value) {
-                $class = '';
-                if (isset($row['meter_type_text'])) {
-                    if ($row['meter_type_text'] == 'ไฟฟ้า') {
-                        $class = 'electricity';
-                    } elseif ($row['meter_type_text'] == 'น้ำ') {
-                        $class = 'water';
-                    }
-                }
-                
-                if (is_numeric($value) && !strpos($key, 'วันที่') && !strpos($key, 'รหัส') && !strpos($key, 'ชื่อ') && !strpos($key, 'ตำแหน่ง')) {
-                    echo '<td class="text-right ' . $class . '">' . number_format($value, 2) . '</td>';
-                } else {
-                    echo '<td class="text-center ' . $class . '">' . $value . '</td>';
-                }
-            }
-            echo '</tr>';
-        }
-        
-        echo '</tbody>';
-        echo '</table>';
-    } else {
-        echo '<p>ไม่มีข้อมูล</p>';
-    }
-    
-    if (!empty($data['summary'])) {
-        echo '<div class="summary">';
-        echo '<h3>สรุป</h3>';
-        echo '<table>';
-        foreach ($data['summary'] as $key => $value) {
-            echo '<tr>';
-            echo '<td><strong>' . $key . '</strong></td>';
-            if (is_numeric($value) && !strpos($key, 'วันที่') && !strpos($key, 'วัน')) {
-                echo '<td class="text-right">' . number_format($value, 2) . '</td>';
-            } else {
-                echo '<td class="text-right">' . $value . '</td>';
-            }
-            echo '</tr>';
-        }
-        echo '</table>';
-        echo '</div>';
-    }
-    
-    if (isset($data['meter_stats']) && !empty($data['meter_stats'])) {
-        echo '<div class="summary">';
-        echo '<h3>สรุปแยกรายมิเตอร์</h3>';
-        echo '<table>';
-        echo '<tr><th>รหัสมิเตอร์</th><th>ประเภท</th><th>จำนวนครั้ง</th><th>ปริมาณรวม</th></tr>';
-        foreach ($data['meter_stats'] as $code => $stat) {
-            $class = $stat['type'] == 'ไฟฟ้า' ? 'electricity' : 'water';
-            echo '<tr>';
-            echo '<td>' . $code . '</td>';
-            echo '<td class="' . $class . '">' . $stat['type'] . '</td>';
-            echo '<td class="text-right">' . $stat['count'] . '</td>';
-            echo '<td class="text-right">' . number_format($stat['total'], 2) . '</td>';
             echo '</tr>';
         }
         echo '</table>';

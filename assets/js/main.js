@@ -343,7 +343,7 @@ if (typeof jQuery === 'undefined') {
                 try {
                     this.tables.main = $('#dataTable').DataTable({
                         language: {
-                            url: '//cdn.datatables.net/plug-ins/1.10.21/i18n/Thai.json'
+                            url: 'https://cdn.datatables.net/plug-ins/1.10.21/i18n/Thai.json'
                         },
                         pageLength: 25,
                         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "ทั้งหมด"]],
@@ -394,7 +394,8 @@ if (typeof jQuery === 'undefined') {
                         $(this).attr('id', tableId);
                         EUMS.tables[tableId] = $(this).DataTable({
                             language: {
-                                url: '//cdn.datatables.net/plug-ins/1.10.21/i18n/Thai.json'
+                            // url: 'http://cdn.datatables.net/plug-ins/1.10.21/i18n/Thai.json' <-- ตรงนี้อาจจะเป็นตัวปัญหา
+                            url: 'https://cdn.datatables.net/plug-ins/1.10.21/i18n/Thai.json' // แน่ใจว่าตรงนี้เป็น https://
                             },
                             pageLength: 10,
                             responsive: true

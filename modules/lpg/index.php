@@ -363,6 +363,12 @@ $chartData = $stmt->fetchAll();
     </div>
 </section>
 
+
+<?php
+// Include footer
+require_once __DIR__ . '/../../includes/footer.php';
+?>
+
 <script>
 let usageChart = null;
 
@@ -510,11 +516,11 @@ function saveAllRecords() {
                     location.reload();
                 }, 1500);
             } else {
-                showNotification(response.message, 'danger');
+                showNotification(response.message, 'error');
             }
         },
         error: function() {
-            showNotification('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'danger');
+            showNotification('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
         }
     });
 }
@@ -547,14 +553,9 @@ function updateDocument() {
             if (response.success) {
                 showNotification('อัปเดตเอกสารเรียบร้อย', 'success');
             } else {
-                showNotification(response.message, 'danger');
+                showNotification(response.message, 'error');
             }
         }
     });
 }
 </script>
-
-<?php
-// Include footer
-require_once __DIR__ . '/../../includes/footer.php';
-?>

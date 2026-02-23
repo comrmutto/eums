@@ -718,6 +718,11 @@ if ($itemId > 0) {
     </div>
 </section>
 
+<?php
+// Include footer
+require_once __DIR__ . '/../../includes/footer.php';
+?>
+
 <script>
 let reportChart = null;
 
@@ -744,7 +749,7 @@ $(document).ready(function() {
     // Initialize DataTable
     $('#reportTable').DataTable({
         language: {
-            url: '//cdn.datatables.net/plug-ins/1.10.21/i18n/Thai.json'
+            url: 'https://cdn.datatables.net/plug-ins/1.10.21/i18n/Thai.json'
         },
         pageLength: 25,
         order: [[0, 'desc']]
@@ -1535,8 +1540,3 @@ function prepareComparisonChartData($data) {
     }
 }
 </style>
-
-<?php
-// Include footer
-require_once __DIR__ . '/../../includes/footer.php';
-?>

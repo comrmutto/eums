@@ -260,6 +260,11 @@ $items = $stmt->fetchAll();
     </div>
 </div>
 
+<?php
+// Include footer
+require_once __DIR__ . '/../../includes/footer.php';
+?>
+
 <script>
 $(document).ready(function() {
     $('#itemForm').on('submit', function(e) {
@@ -342,7 +347,7 @@ function saveItem() {
                     location.reload();
                 }, 1500);
             } else {
-                showNotification(response.message, 'danger');
+                showNotification(response.message, 'error');
             }
         }
     });
@@ -361,15 +366,10 @@ function deleteItem(id) {
                         location.reload();
                     }, 1500);
                 } else {
-                    showNotification(response.message, 'danger');
+                    showNotification(response.message, 'error');
                 }
             }
         });
     }
 }
 </script>
-
-<?php
-// Include footer
-require_once __DIR__ . '/../../includes/footer.php';
-?>
