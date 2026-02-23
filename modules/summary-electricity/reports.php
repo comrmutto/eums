@@ -256,6 +256,17 @@ switch ($reportType) {
             <div class="col-lg-3 col-6">
                 <div class="small-box bg-success">
                     <div class="inner">
+                        <h3><?php echo number_format($statistics['total_lpg'] ?? 0, 2); ?></h3>
+                        <p>หน่วย LPG รวม (kg)</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-fire"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-warning">
+                    <div class="inner">
                         <h3><?php echo number_format($statistics['total_cost'] ?? 0, 2); ?></h3>
                         <p>ค่าไฟฟ้ารวม (บาท)</p>
                     </div>
@@ -265,24 +276,13 @@ switch ($reportType) {
                 </div>
             </div>
             <div class="col-lg-3 col-6">
-                <div class="small-box bg-warning">
-                    <div class="inner">
-                        <h3><?php echo number_format($statistics['avg_cost_per_unit'] ?? 0, 4); ?></h3>
-                        <p>ค่าไฟเฉลี่ย/หน่วย</p>
-                    </div>
-                    <div class="icon">
-                        <i class="fas fa-calculator"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-6">
                 <div class="small-box bg-danger">
                     <div class="inner">
-                        <h3><?php echo number_format($statistics['avg_daily_ee'] ?? 0, 2); ?></h3>
-                        <p>ค่าเฉลี่ยรายวัน</p>
+                        <h3><?php echo number_format($statistics['total_lpg_cost'] ?? 0, 2); ?></h3>
+                        <p>ค่า LPG รวม (บาท)</p>
                     </div>
                     <div class="icon">
-                        <i class="fas fa-chart-line"></i>
+                        <i class="fas fa-fire"></i>
                     </div>
                 </div>
             </div>
@@ -296,7 +296,7 @@ switch ($reportType) {
                 <div class="small-box bg-primary">
                     <div class="inner">
                         <h3><?php echo number_format($analysis['growth_rate'] ?? 0, 1); ?>%</h3>
-                        <p>อัตราการเติบโต</p>
+                        <p>อัตราการเติบโต (ไฟฟ้า)</p>
                     </div>
                     <div class="icon">
                         <i class="fas fa-chart-line"></i>
@@ -306,22 +306,22 @@ switch ($reportType) {
             <div class="col-lg-4 col-6">
                 <div class="small-box bg-secondary">
                     <div class="inner">
-                        <h3><?php echo $analysis['peak_month'] ?? '-'; ?></h3>
-                        <p>เดือนที่ใช้ไฟฟ้าสูงสุด</p>
+                        <h3><?php echo number_format($analysis['lpg_growth_rate'] ?? 0, 1); ?>%</h3>
+                        <p>อัตราการเติบโต (LPG)</p>
                     </div>
                     <div class="icon">
-                        <i class="fas fa-calendar-alt"></i>
+                        <i class="fas fa-chart-line"></i>
                     </div>
                 </div>
             </div>
             <div class="col-lg-4 col-6">
                 <div class="small-box bg-info">
                     <div class="inner">
-                        <h3><?php echo number_format($analysis['peak_value'] ?? 0, 2); ?></h3>
-                        <p>ค่าสูงสุด (kWh)</p>
+                        <h3><?php echo $analysis['peak_month'] ?? '-'; ?></h3>
+                        <p>เดือนที่ใช้สูงสุด</p>
                     </div>
                     <div class="icon">
-                        <i class="fas fa-arrow-up"></i>
+                        <i class="fas fa-calendar-alt"></i>
                     </div>
                 </div>
             </div>
@@ -334,10 +334,10 @@ switch ($reportType) {
             <div class="card-header">
                 <h3 class="card-title">
                     <i class="fas fa-chart-line"></i>
-                    กราฟแสดงข้อมูล
+                    กราฟแสดงข้อมูลการใช้ไฟฟ้าและ LPG
                 </h3>
                 <div class="card-tools">
-                    <select id="chartType" class="form-control form-control-sm" style="width: 150px;">
+                    <select id="chartType" class="form-control form-control-sm" style="width: 150px; height: 38px;">
                         <option value="line" <?php echo $chartType == 'line' ? 'selected' : ''; ?>>กราฟเส้น</option>
                         <option value="bar" <?php echo $chartType == 'bar' ? 'selected' : ''; ?>>กราฟแท่ง</option>
                         <option value="area" <?php echo $chartType == 'area' ? 'selected' : ''; ?>>กราฟพื้นที่</option>
@@ -358,7 +358,7 @@ switch ($reportType) {
             <div class="card-header">
                 <h3 class="card-title">
                     <i class="fas fa-table"></i>
-                    ข้อมูลรายละเอียด
+                    ข้อมูลรายละเอียดการใช้ไฟฟ้าและ LPG
                 </h3>
             </div>
             <div class="card-body">
@@ -369,57 +369,79 @@ switch ($reportType) {
                                 <?php if ($reportType == 'daily'): ?>
                                 <th>วันที่</th>
                                 <th>หน่วยไฟฟ้า (kWh)</th>
-                                <th>ค่าไฟต่อหน่วย</th>
-                                <th>ค่าไฟฟ้า (บาท)</th>
+                                <th>หน่วย LPG (kg)</th>
+                                <th>ค่าไฟ/หน่วย</th>
+                                <th>ค่า LPG/หน่วย</th>
+                                <th>ค่าไฟฟ้า</th>
+                                <th>ค่า LPG</th>
+                                <th>รวม</th>
                                 <th>PE</th>
-                                <th>เทียบกับวันก่อน</th>
-                                <th>เทียบกับค่าเฉลี่ย</th>
                                 <th>ผู้บันทึก</th>
                                 
                                 <?php elseif ($reportType == 'monthly'): ?>
                                 <th>เดือน</th>
                                 <th>หน่วยไฟฟ้ารวม</th>
+                                <th>หน่วย LPG รวม</th>
                                 <th>ค่าไฟฟ้ารวม</th>
+                                <th>ค่า LPG รวม</th>
                                 <th>ค่าไฟเฉลี่ย/หน่วย</th>
+                                <th>ค่า LPG เฉลี่ย/หน่วย</th>
                                 <th>จำนวนวัน</th>
-                                <th>เฉลี่ยรายวัน</th>
-                                <th>สูงสุดรายวัน</th>
-                                <th>ต่ำสุดรายวัน</th>
+                                <th>ไฟฟ้าสูงสุด</th>
+                                <th>LPG สูงสุด</th>
                                 
                                 <?php elseif ($reportType == 'yearly'): ?>
                                 <th>ปี</th>
                                 <th>หน่วยไฟฟ้ารวม</th>
+                                <th>หน่วย LPG รวม</th>
                                 <th>ค่าไฟฟ้ารวม</th>
+                                <th>ค่า LPG รวม</th>
                                 <th>ค่าไฟเฉลี่ย/หน่วย</th>
+                                <th>ค่า LPG เฉลี่ย/หน่วย</th>
                                 <th>จำนวนวัน</th>
-                                <th>เฉลี่ยรายวัน</th>
-                                <th>เปลี่ยนแปลงจากปีก่อน</th>
+                                <th>เปลี่ยนแปลงไฟฟ้า</th>
+                                <th>เปลี่ยนแปลง LPG</th>
                                 
                                 <?php elseif ($reportType == 'comparison'): ?>
-                                <th>เดือน</th>
-                                <th>ปี <?php echo $year + 543; ?> (kWh)</th>
-                                <th>ปี <?php echo ($year - 1) + 543; ?> (kWh)</th>
-                                <th>ความต่าง</th>
-                                <th>% เปลี่ยนแปลง</th>
-                                <th>ปี <?php echo $year + 543; ?> (บาท)</th>
-                                <th>ปี <?php echo ($year - 1) + 543; ?> (บาท)</th>
+                                <th rowspan="2">เดือน</th>
+                                <th colspan="2" class="text-center">ปี <?php echo $year + 543; ?></th>
+                                <th colspan="2" class="text-center">ปี <?php echo ($year - 1) + 543; ?></th>
+                                <th colspan="2" class="text-center">ความต่าง</th>
+                                <th colspan="2" class="text-center">% เปลี่ยนแปลง</th>
                                 
                                 <?php elseif ($reportType == 'cost_analysis'): ?>
                                 <th>วันที่</th>
                                 <th>หน่วยไฟฟ้า</th>
                                 <th>ค่าไฟ/หน่วย</th>
                                 <th>ค่าไฟรวม</th>
-                                <th>สัดส่วนค่าไฟ</th>
-                                <th>ประสิทธิภาพ</th>
+                                <th>หน่วย LPG</th>
+                                <th>ค่า LPG/หน่วย</th>
+                                <th>ค่า LPG รวม</th>
+                                <th>รวมค่าใช้จ่าย</th>
                                 
                                 <?php elseif ($reportType == 'forecast'): ?>
                                 <th>เดือน</th>
-                                <th>ค่าพยากรณ์</th>
-                                <th>ช่วงล่าง</th>
-                                <th>ช่วงบน</th>
+                                <th>ไฟฟ้าพยากรณ์</th>
+                                <th>LPG พยากรณ์</th>
+                                <th>ช่วงล่างไฟฟ้า</th>
+                                <th>ช่วงบนไฟฟ้า</th>
+                                <th>ช่วงล่าง LPG</th>
+                                <th>ช่วงบน LPG</th>
                                 <th>ความเชื่อมั่น</th>
                                 <?php endif; ?>
                             </tr>
+                            <?php if ($reportType == 'comparison'): ?>
+                            <tr>
+                                <th>ไฟฟ้า</th>
+                                <th>LPG</th>
+                                <th>ไฟฟ้า</th>
+                                <th>LPG</th>
+                                <th>ไฟฟ้า</th>
+                                <th>LPG</th>
+                                <th>ไฟฟ้า</th>
+                                <th>LPG</th>
+                            </tr>
+                            <?php endif; ?>
                         </thead>
                         <tbody>
                             <?php foreach ($reportData as $row): ?>
@@ -427,54 +449,41 @@ switch ($reportType) {
                                 <?php if ($reportType == 'daily'): ?>
                                 <td><?php echo date('d/m/Y', strtotime($row['record_date'])); ?></td>
                                 <td class="text-right"><?php echo number_format($row['ee_unit'], 2); ?></td>
+                                <td class="text-right"><?php echo isset($row['lpg_unit']) ? number_format($row['lpg_unit'], 2) : '-'; ?></td>
                                 <td class="text-right"><?php echo number_format($row['cost_per_unit'], 4); ?></td>
+                                <td class="text-right"><?php echo isset($row['lpg_cost_per_unit']) ? number_format($row['lpg_cost_per_unit'], 4) : '-'; ?></td>
                                 <td class="text-right"><?php echo number_format($row['total_cost'], 2); ?></td>
+                                <td class="text-right"><?php echo isset($row['total_lpg_cost']) ? number_format($row['total_lpg_cost'], 2) : '-'; ?></td>
+                                <td class="text-right">
+                                    <?php 
+                                    $total = $row['total_cost'] + ($row['total_lpg_cost'] ?? 0);
+                                    echo number_format($total, 2);
+                                    ?>
+                                </td>
                                 <td class="text-right"><?php echo $row['pe'] ? number_format($row['pe'], 4) : '-'; ?></td>
-                                <td class="text-center">
-                                    <?php if (isset($row['prev_ee'])): ?>
-                                        <?php 
-                                        $change = $row['ee_unit'] - $row['prev_ee'];
-                                        $changePercent = $row['prev_ee'] > 0 ? ($change / $row['prev_ee']) * 100 : 0;
-                                        ?>
-                                        <span class="badge badge-<?php echo $change > 0 ? 'danger' : ($change < 0 ? 'success' : 'secondary'); ?>">
-                                            <?php echo $change > 0 ? '+' : ''; ?><?php echo number_format($change, 2); ?> (<?php echo number_format($changePercent, 1); ?>%)
-                                        </span>
-                                    <?php else: ?>
-                                        -
-                                    <?php endif; ?>
-                                </td>
-                                <td class="text-center">
-                                    <?php if (isset($row['avg_ee'])): ?>
-                                        <?php 
-                                        $vsAvg = $row['ee_unit'] - $row['avg_ee'];
-                                        $vsAvgPercent = ($vsAvg / $row['avg_ee']) * 100;
-                                        ?>
-                                        <span class="badge badge-<?php echo $vsAvg > 0 ? 'danger' : ($vsAvg < 0 ? 'success' : 'secondary'); ?>">
-                                            <?php echo $vsAvg > 0 ? '+' : ''; ?><?php echo number_format($vsAvg, 2); ?> (<?php echo number_format($vsAvgPercent, 1); ?>%)
-                                        </span>
-                                    <?php else: ?>
-                                        -
-                                    <?php endif; ?>
-                                </td>
                                 <td><?php echo htmlspecialchars($row['recorded_by']); ?></td>
                                 
                                 <?php elseif ($reportType == 'monthly'): ?>
                                 <td><?php echo getThaiMonth($row['month']) . ' ' . ($row['year'] + 543); ?></td>
                                 <td class="text-right"><?php echo number_format($row['total_ee'], 2); ?></td>
+                                <td class="text-right"><?php echo isset($row['total_lpg']) ? number_format($row['total_lpg'], 2) : '-'; ?></td>
                                 <td class="text-right"><?php echo number_format($row['total_cost'], 2); ?></td>
+                                <td class="text-right"><?php echo isset($row['total_lpg_cost']) ? number_format($row['total_lpg_cost'], 2) : '-'; ?></td>
                                 <td class="text-right"><?php echo number_format($row['avg_cost'], 4); ?></td>
+                                <td class="text-right"><?php echo isset($row['avg_lpg_cost']) ? number_format($row['avg_lpg_cost'], 4) : '-'; ?></td>
                                 <td class="text-right"><?php echo $row['days_count']; ?></td>
-                                <td class="text-right"><?php echo number_format($row['avg_daily'], 2); ?></td>
-                                <td class="text-right"><?php echo number_format($row['max_daily'], 2); ?></td>
-                                <td class="text-right"><?php echo number_format($row['min_daily'], 2); ?></td>
+                                <td class="text-right"><?php echo number_format($row['max_ee'], 2); ?></td>
+                                <td class="text-right"><?php echo isset($row['max_lpg']) ? number_format($row['max_lpg'], 2) : '-'; ?></td>
                                 
                                 <?php elseif ($reportType == 'yearly'): ?>
                                 <td><?php echo $row['year'] + 543; ?></td>
                                 <td class="text-right"><?php echo number_format($row['total_ee'], 2); ?></td>
+                                <td class="text-right"><?php echo isset($row['total_lpg']) ? number_format($row['total_lpg'], 2) : '-'; ?></td>
                                 <td class="text-right"><?php echo number_format($row['total_cost'], 2); ?></td>
+                                <td class="text-right"><?php echo isset($row['total_lpg_cost']) ? number_format($row['total_lpg_cost'], 2) : '-'; ?></td>
                                 <td class="text-right"><?php echo number_format($row['avg_cost'], 4); ?></td>
+                                <td class="text-right"><?php echo isset($row['avg_lpg_cost']) ? number_format($row['avg_lpg_cost'], 4) : '-'; ?></td>
                                 <td class="text-right"><?php echo $row['days_count']; ?></td>
-                                <td class="text-right"><?php echo number_format($row['avg_daily'], 2); ?></td>
                                 <td class="text-center">
                                     <?php if (isset($row['growth'])): ?>
                                     <span class="badge badge-<?php echo $row['growth'] > 0 ? 'danger' : ($row['growth'] < 0 ? 'success' : 'secondary'); ?>">
@@ -484,11 +493,22 @@ switch ($reportType) {
                                     -
                                     <?php endif; ?>
                                 </td>
+                                <td class="text-center">
+                                    <?php if (isset($row['lpg_growth'])): ?>
+                                    <span class="badge badge-<?php echo $row['lpg_growth'] > 0 ? 'danger' : ($row['lpg_growth'] < 0 ? 'success' : 'secondary'); ?>">
+                                        <?php echo $row['lpg_growth'] > 0 ? '+' : ''; ?><?php echo number_format($row['lpg_growth'], 1); ?>%
+                                    </span>
+                                    <?php else: ?>
+                                    -
+                                    <?php endif; ?>
+                                </td>
                                 
                                 <?php elseif ($reportType == 'comparison'): ?>
                                 <td><?php echo getThaiMonth($row['month']); ?></td>
                                 <td class="text-right"><?php echo number_format($row['ee_current'], 2); ?></td>
+                                <td class="text-right"><?php echo isset($row['lpg_current']) ? number_format($row['lpg_current'], 2) : '-'; ?></td>
                                 <td class="text-right"><?php echo number_format($row['ee_previous'], 2); ?></td>
+                                <td class="text-right"><?php echo isset($row['lpg_previous']) ? number_format($row['lpg_previous'], 2) : '-'; ?></td>
                                 <td class="text-right">
                                     <?php 
                                     $diff = $row['ee_current'] - $row['ee_previous'];
@@ -499,42 +519,54 @@ switch ($reportType) {
                                 </td>
                                 <td class="text-right">
                                     <?php 
+                                    $lpg_diff = isset($row['lpg_current']) && isset($row['lpg_previous']) ? 
+                                               $row['lpg_current'] - $row['lpg_previous'] : 0;
+                                    ?>
+                                    <span class="badge badge-<?php echo $lpg_diff > 0 ? 'danger' : ($lpg_diff < 0 ? 'success' : 'secondary'); ?>">
+                                        <?php echo $lpg_diff > 0 ? '+' : ''; ?><?php echo number_format($lpg_diff, 2); ?>
+                                    </span>
+                                </td>
+                                <td class="text-right">
+                                    <?php 
                                     $percent = $row['ee_previous'] > 0 ? ($diff / $row['ee_previous']) * 100 : 0;
                                     ?>
                                     <span class="badge badge-<?php echo $percent > 0 ? 'danger' : ($percent < 0 ? 'success' : 'secondary'); ?>">
                                         <?php echo $percent > 0 ? '+' : ''; ?><?php echo number_format($percent, 1); ?>%
                                     </span>
                                 </td>
-                                <td class="text-right"><?php echo number_format($row['cost_current'], 2); ?></td>
-                                <td class="text-right"><?php echo number_format($row['cost_previous'], 2); ?></td>
+                                <td class="text-right">
+                                    <?php 
+                                    $lpg_percent = ($row['lpg_previous'] ?? 0) > 0 ? 
+                                                   ($lpg_diff / $row['lpg_previous']) * 100 : 0;
+                                    ?>
+                                    <span class="badge badge-<?php echo $lpg_percent > 0 ? 'danger' : ($lpg_percent < 0 ? 'success' : 'secondary'); ?>">
+                                        <?php echo $lpg_percent > 0 ? '+' : ''; ?><?php echo number_format($lpg_percent, 1); ?>%
+                                    </span>
+                                </td>
                                 
                                 <?php elseif ($reportType == 'cost_analysis'): ?>
                                 <td><?php echo date('d/m/Y', strtotime($row['record_date'])); ?></td>
                                 <td class="text-right"><?php echo number_format($row['ee_unit'], 2); ?></td>
                                 <td class="text-right"><?php echo number_format($row['cost_per_unit'], 4); ?></td>
                                 <td class="text-right"><?php echo number_format($row['total_cost'], 2); ?></td>
+                                <td class="text-right"><?php echo isset($row['lpg_unit']) ? number_format($row['lpg_unit'], 2) : '-'; ?></td>
+                                <td class="text-right"><?php echo isset($row['lpg_cost_per_unit']) ? number_format($row['lpg_cost_per_unit'], 4) : '-'; ?></td>
+                                <td class="text-right"><?php echo isset($row['total_lpg_cost']) ? number_format($row['total_lpg_cost'], 2) : '-'; ?></td>
                                 <td class="text-right">
                                     <?php 
-                                    $totalCost = array_sum(array_column($reportData, 'total_cost'));
-                                    $share = $totalCost > 0 ? ($row['total_cost'] / $totalCost) * 100 : 0;
+                                    $total = $row['total_cost'] + ($row['total_lpg_cost'] ?? 0);
+                                    echo number_format($total, 2);
                                     ?>
-                                    <div class="progress progress-xs">
-                                        <div class="progress-bar bg-primary" style="width: <?php echo $share; ?>%"></div>
-                                    </div>
-                                    <?php echo number_format($share, 1); ?>%
-                                </td>
-                                <td class="text-right">
-                                    <?php 
-                                    $efficiency = $row['total_cost'] > 0 ? $row['ee_unit'] / $row['total_cost'] : 0;
-                                    echo number_format($efficiency, 4);
-                                    ?> kWh/บาท
                                 </td>
                                 
                                 <?php elseif ($reportType == 'forecast'): ?>
                                 <td><?php echo getThaiMonth($row['month']); ?></td>
-                                <td class="text-right"><?php echo number_format($row['forecast'], 2); ?></td>
-                                <td class="text-right"><?php echo number_format($row['lower_bound'], 2); ?></td>
-                                <td class="text-right"><?php echo number_format($row['upper_bound'], 2); ?></td>
+                                <td class="text-right"><?php echo number_format($row['ee_forecast'] ?? $row['forecast'], 2); ?></td>
+                                <td class="text-right"><?php echo number_format($row['lpg_forecast'] ?? 0, 2); ?></td>
+                                <td class="text-right"><?php echo number_format($row['ee_lower'] ?? $row['lower_bound'], 2); ?></td>
+                                <td class="text-right"><?php echo number_format($row['ee_upper'] ?? $row['upper_bound'], 2); ?></td>
+                                <td class="text-right"><?php echo number_format($row['lpg_lower'] ?? 0, 2); ?></td>
+                                <td class="text-right"><?php echo number_format($row['lpg_upper'] ?? 0, 2); ?></td>
                                 <td class="text-right"><?php echo number_format($row['confidence'], 1); ?>%</td>
                                 <?php endif; ?>
                             </tr>
@@ -543,11 +575,15 @@ switch ($reportType) {
                         <?php if (!empty($summary) && $reportType == 'daily'): ?>
                         <tfoot>
                             <tr class="bg-gray">
-                                <th colspan="1" class="text-right">รวม</th>
+                                <th class="text-right">รวม</th>
                                 <th class="text-right"><?php echo number_format($summary['total_ee'], 2); ?></th>
+                                <th class="text-right"><?php echo number_format($summary['total_lpg'] ?? 0, 2); ?></th>
+                                <th class="text-right">-</th>
                                 <th class="text-right">-</th>
                                 <th class="text-right"><?php echo number_format($summary['total_cost'], 2); ?></th>
-                                <th colspan="4"></th>
+                                <th class="text-right"><?php echo number_format($summary['total_lpg_cost'] ?? 0, 2); ?></th>
+                                <th class="text-right"><?php echo number_format(($summary['total_cost'] ?? 0) + ($summary['total_lpg_cost'] ?? 0), 2); ?></th>
+                                <th colspan="2"></th>
                             </tr>
                         </tfoot>
                         <?php endif; ?>
@@ -564,28 +600,1051 @@ switch ($reportType) {
     </div>
 </section>
 
+<?php
+// Include footer
+require_once __DIR__ . '/../../includes/footer.php';
+?>
+
+<?php
+// Report data fetching functions
+function getDailyReport($db, $startDate, $endDate) {
+    $sql = "
+        SELECT 
+            *,
+            (SELECT AVG(ee_unit) FROM electricity_summary WHERE record_date BETWEEN ? AND ?) as avg_ee,
+            (SELECT AVG(lpg_unit) FROM electricity_summary WHERE record_date BETWEEN ? AND ? AND lpg_unit > 0) as avg_lpg
+        FROM electricity_summary
+        WHERE record_date BETWEEN ? AND ?
+        ORDER BY record_date
+    ";
+    $stmt = $db->prepare($sql);
+    $stmt->execute([$startDate, $endDate, $startDate, $endDate, $startDate, $endDate]);
+    $data = $stmt->fetchAll();
+    
+    // Add previous day comparison
+    for ($i = 0; $i < count($data); $i++) {
+        if ($i > 0) {
+            $data[$i]['prev_ee'] = $data[$i-1]['ee_unit'];
+            $data[$i]['prev_lpg'] = $data[$i-1]['lpg_unit'] ?? 0;
+        }
+    }
+    
+    return $data;
+}
+
+function calculateDailySummary($data) {
+    $totalEE = 0;
+    $totalLPG = 0;
+    $totalCost = 0;
+    $totalLPGCost = 0;
+    $days = count($data);
+    
+    foreach ($data as $row) {
+        $totalEE += $row['ee_unit'];
+        $totalLPG += $row['lpg_unit'] ?? 0;
+        $totalCost += $row['total_cost'];
+        $totalLPGCost += $row['total_lpg_cost'] ?? 0;
+    }
+    
+    return [
+        'total_ee' => $totalEE,
+        'total_lpg' => $totalLPG,
+        'total_cost' => $totalCost,
+        'total_lpg_cost' => $totalLPGCost,
+        'avg_daily' => $days > 0 ? $totalEE / $days : 0,
+        'avg_lpg_daily' => $days > 0 ? $totalLPG / $days : 0
+    ];
+}
+
+function calculateDailyStatistics($data) {
+    $totalEE = 0;
+    $totalLPG = 0;
+    $totalCost = 0;
+    $totalLPGCost = 0;
+    $days = count($data);
+    $eeValues = array_column($data, 'ee_unit');
+    $lpgValues = array_filter(array_column($data, 'lpg_unit'));
+    $costValues = array_column($data, 'total_cost');
+    $lpgCostValues = array_filter(array_column($data, 'total_lpg_cost'));
+    
+    foreach ($data as $row) {
+        $totalEE += $row['ee_unit'];
+        $totalLPG += $row['lpg_unit'] ?? 0;
+        $totalCost += $row['total_cost'];
+        $totalLPGCost += $row['total_lpg_cost'] ?? 0;
+    }
+    
+    return [
+        'total_ee' => $totalEE,
+        'total_lpg' => $totalLPG,
+        'total_cost' => $totalCost,
+        'total_lpg_cost' => $totalLPGCost,
+        'avg_cost_per_unit' => $totalEE > 0 ? $totalCost / $totalEE : 0,
+        'avg_lpg_cost_per_unit' => $totalLPG > 0 ? $totalLPGCost / $totalLPG : 0,
+        'avg_daily_ee' => $days > 0 ? $totalEE / $days : 0,
+        'avg_daily_lpg' => $days > 0 ? $totalLPG / $days : 0,
+        'max_ee' => !empty($eeValues) ? max($eeValues) : 0,
+        'max_lpg' => !empty($lpgValues) ? max($lpgValues) : 0,
+        'min_ee' => !empty($eeValues) ? min($eeValues) : 0,
+        'min_lpg' => !empty($lpgValues) ? min($lpgValues) : 0
+    ];
+}
+
+function analyzeDailyData($data) {
+    $eeValues = array_column($data, 'ee_unit');
+    $lpgValues = array_filter(array_column($data, 'lpg_unit'));
+    $dates = array_column($data, 'record_date');
+    
+    // Find peak day for electricity
+    $maxEE = !empty($eeValues) ? max($eeValues) : 0;
+    $maxIndex = array_search($maxEE, $eeValues);
+    $peakDate = $maxIndex !== false ? $dates[$maxIndex] : null;
+    
+    // Find peak day for LPG
+    $maxLPG = !empty($lpgValues) ? max($lpgValues) : 0;
+    
+    // Calculate growth rate
+    $firstEE = !empty($eeValues) ? $eeValues[0] : 0;
+    $lastEE = !empty($eeValues) ? $eeValues[count($eeValues)-1] : 0;
+    $growthRate = $firstEE > 0 ? (($lastEE - $firstEE) / $firstEE) * 100 : 0;
+    
+    $firstLPG = !empty($lpgValues) ? $lpgValues[array_key_first($lpgValues)] : 0;
+    $lastLPG = !empty($lpgValues) ? $lpgValues[array_key_last($lpgValues)] : 0;
+    $lpgGrowthRate = $firstLPG > 0 ? (($lastLPG - $firstLPG) / $firstLPG) * 100 : 0;
+    
+    return [
+        'peak_value' => $maxEE,
+        'peak_lpg' => $maxLPG,
+        'peak_date' => $peakDate ? date('d/m/Y', strtotime($peakDate)) : '-',
+        'growth_rate' => $growthRate,
+        'lpg_growth_rate' => $lpgGrowthRate,
+        'data_points' => count($data)
+    ];
+}
+
+function prepareDailyChartData($data) {
+    $labels = [];
+    $ee = [];
+    $lpg = [];
+    $cost = [];
+    
+    foreach ($data as $row) {
+        $labels[] = date('d/m', strtotime($row['record_date']));
+        $ee[] = $row['ee_unit'];
+        $lpg[] = $row['lpg_unit'] ?? 0;
+        $cost[] = $row['total_cost'];
+    }
+    
+    return [
+        'labels' => $labels,
+        'ee' => $ee,
+        'lpg' => $lpg,
+        'cost' => $cost
+    ];
+}
+
+function getMonthlyReport($db, $year) {
+    $sql = "
+        SELECT 
+            MONTH(record_date) as month,
+            YEAR(record_date) as year,
+            COUNT(*) as days_count,
+            SUM(ee_unit) as total_ee,
+            SUM(lpg_unit) as total_lpg,
+            SUM(total_cost) as total_cost,
+            SUM(total_lpg_cost) as total_lpg_cost,
+            AVG(cost_per_unit) as avg_cost,
+            AVG(lpg_cost_per_unit) as avg_lpg_cost,
+            AVG(ee_unit) as avg_daily,
+            AVG(lpg_unit) as avg_lpg_daily,
+            MAX(ee_unit) as max_ee,
+            MAX(lpg_unit) as max_lpg,
+            MIN(ee_unit) as min_ee,
+            MIN(lpg_unit) as min_lpg
+        FROM electricity_summary
+        WHERE YEAR(record_date) = ?
+        GROUP BY YEAR(record_date), MONTH(record_date)
+        ORDER BY month
+    ";
+    $stmt = $db->prepare($sql);
+    $stmt->execute([$year]);
+    return $stmt->fetchAll();
+}
+
+function calculateMonthlySummary($data) {
+    $totalEE = 0;
+    $totalLPG = 0;
+    $totalCost = 0;
+    $totalLPGCost = 0;
+    $months = count($data);
+    
+    foreach ($data as $row) {
+        $totalEE += $row['total_ee'];
+        $totalLPG += $row['total_lpg'];
+        $totalCost += $row['total_cost'];
+        $totalLPGCost += $row['total_lpg_cost'];
+    }
+    
+    return [
+        'total_ee' => $totalEE,
+        'total_lpg' => $totalLPG,
+        'total_cost' => $totalCost,
+        'total_lpg_cost' => $totalLPGCost,
+        'avg_daily' => $months > 0 ? $totalEE / $months : 0,
+        'avg_lpg_daily' => $months > 0 ? $totalLPG / $months : 0
+    ];
+}
+
+function calculateMonthlyStatistics($data) {
+    $totalEE = 0;
+    $totalLPG = 0;
+    $totalCost = 0;
+    $totalLPGCost = 0;
+    $months = count($data);
+    $monthlyEE = array_column($data, 'total_ee');
+    $monthlyLPG = array_column($data, 'total_lpg');
+    
+    foreach ($data as $row) {
+        $totalEE += $row['total_ee'];
+        $totalLPG += $row['total_lpg'];
+        $totalCost += $row['total_cost'];
+        $totalLPGCost += $row['total_lpg_cost'];
+    }
+    
+    return [
+        'total_ee' => $totalEE,
+        'total_lpg' => $totalLPG,
+        'total_cost' => $totalCost,
+        'total_lpg_cost' => $totalLPGCost,
+        'avg_cost_per_unit' => $totalEE > 0 ? $totalCost / $totalEE : 0,
+        'avg_lpg_cost_per_unit' => $totalLPG > 0 ? $totalLPGCost / $totalLPG : 0,
+        'avg_daily_ee' => $months > 0 ? $totalEE / $months : 0,
+        'avg_daily_lpg' => $months > 0 ? $totalLPG / $months : 0,
+        'max_monthly' => !empty($monthlyEE) ? max($monthlyEE) : 0,
+        'max_lpg_monthly' => !empty($monthlyLPG) ? max($monthlyLPG) : 0,
+        'min_monthly' => !empty($monthlyEE) ? min($monthlyEE) : 0,
+        'min_lpg_monthly' => !empty($monthlyLPG) ? min($monthlyLPG) : 0
+    ];
+}
+
+function analyzeMonthlyData($data, $year) {
+    $monthlyEE = array_column($data, 'total_ee');
+    $monthlyLPG = array_column($data, 'total_lpg');
+    $months = array_column($data, 'month');
+    
+    // Find peak month for electricity
+    $maxEE = !empty($monthlyEE) ? max($monthlyEE) : 0;
+    $maxIndex = array_search($maxEE, $monthlyEE);
+    $peakMonth = $maxIndex !== false ? $months[$maxIndex] : null;
+    
+    // Find peak month for LPG
+    $maxLPG = !empty($monthlyLPG) ? max($monthlyLPG) : 0;
+    
+    // Calculate average
+    $avgEE = !empty($monthlyEE) ? array_sum($monthlyEE) / count($monthlyEE) : 0;
+    $avgLPG = !empty($monthlyLPG) ? array_sum($monthlyLPG) / count($monthlyLPG) : 0;
+    
+    // Get previous year data for comparison
+    $db = getDB();
+    $stmt = $db->prepare("
+        SELECT SUM(ee_unit) as total_ee, SUM(lpg_unit) as total_lpg
+        FROM electricity_summary
+        WHERE YEAR(record_date) = ?
+    ");
+    $stmt->execute([$year - 1]);
+    $prevYear = $stmt->fetch();
+    
+    $growthRate = $prevYear && $prevYear['total_ee'] > 0 ? 
+                  ((array_sum($monthlyEE) - $prevYear['total_ee']) / $prevYear['total_ee']) * 100 : 0;
+    
+    $lpgGrowthRate = $prevYear && $prevYear['total_lpg'] > 0 ? 
+                     ((array_sum($monthlyLPG) - $prevYear['total_lpg']) / $prevYear['total_lpg']) * 100 : 0;
+    
+    return [
+        'peak_month' => $peakMonth ? getThaiMonth($peakMonth) : '-',
+        'peak_value' => $maxEE,
+        'peak_lpg' => $maxLPG,
+        'avg_monthly' => $avgEE,
+        'avg_lpg_monthly' => $avgLPG,
+        'growth_rate' => $growthRate,
+        'lpg_growth_rate' => $lpgGrowthRate,
+        'total_months' => count($data)
+    ];
+}
+
+function prepareMonthlyChartData($data) {
+    $labels = [];
+    $ee = [];
+    $lpg = [];
+    $cost = [];
+    
+    foreach ($data as $row) {
+        $labels[] = getThaiShortMonth($row['month']);
+        $ee[] = $row['total_ee'];
+        $lpg[] = $row['total_lpg'];
+        $cost[] = $row['total_cost'];
+    }
+    
+    return [
+        'labels' => $labels,
+        'ee' => $ee,
+        'lpg' => $lpg,
+        'cost' => $cost
+    ];
+}
+
+function getYearlyReport($db) {
+    $sql = "
+        SELECT 
+            YEAR(record_date) as year,
+            COUNT(*) as days_count,
+            SUM(ee_unit) as total_ee,
+            SUM(lpg_unit) as total_lpg,
+            SUM(total_cost) as total_cost,
+            SUM(total_lpg_cost) as total_lpg_cost,
+            AVG(cost_per_unit) as avg_cost,
+            AVG(lpg_cost_per_unit) as avg_lpg_cost,
+            AVG(ee_unit) as avg_daily,
+            AVG(lpg_unit) as avg_lpg_daily
+        FROM electricity_summary
+        GROUP BY YEAR(record_date)
+        ORDER BY year DESC
+    ";
+    $stmt = $db->query($sql);
+    $data = $stmt->fetchAll();
+    
+    // Calculate growth for each year
+    for ($i = 0; $i < count($data); $i++) {
+        if ($i < count($data) - 1) {
+            $current = $data[$i]['total_ee'];
+            $previous = $data[$i+1]['total_ee'];
+            $data[$i]['growth'] = $previous > 0 ? (($current - $previous) / $previous) * 100 : 0;
+            
+            $currentLPG = $data[$i]['total_lpg'];
+            $previousLPG = $data[$i+1]['total_lpg'];
+            $data[$i]['lpg_growth'] = $previousLPG > 0 ? (($currentLPG - $previousLPG) / $previousLPG) * 100 : 0;
+        }
+    }
+    
+    return $data;
+}
+
+function calculateYearlySummary($data) {
+    $totalEE = 0;
+    $totalLPG = 0;
+    $totalCost = 0;
+    $totalLPGCost = 0;
+    $years = count($data);
+    
+    foreach ($data as $row) {
+        $totalEE += $row['total_ee'];
+        $totalLPG += $row['total_lpg'];
+        $totalCost += $row['total_cost'];
+        $totalLPGCost += $row['total_lpg_cost'];
+    }
+    
+    return [
+        'total_ee' => $totalEE,
+        'total_lpg' => $totalLPG,
+        'total_cost' => $totalCost,
+        'total_lpg_cost' => $totalLPGCost,
+        'avg_yearly' => $years > 0 ? $totalEE / $years : 0,
+        'avg_lpg_yearly' => $years > 0 ? $totalLPG / $years : 0
+    ];
+}
+
+function calculateYearlyStatistics($data) {
+    $totalEE = 0;
+    $totalLPG = 0;
+    $totalCost = 0;
+    $totalLPGCost = 0;
+    $years = count($data);
+    
+    foreach ($data as $row) {
+        $totalEE += $row['total_ee'];
+        $totalLPG += $row['total_lpg'];
+        $totalCost += $row['total_cost'];
+        $totalLPGCost += $row['total_lpg_cost'];
+    }
+    
+    return [
+        'total_ee' => $totalEE,
+        'total_lpg' => $totalLPG,
+        'total_cost' => $totalCost,
+        'total_lpg_cost' => $totalLPGCost,
+        'avg_cost_per_unit' => $totalEE > 0 ? $totalCost / $totalEE : 0,
+        'avg_lpg_cost_per_unit' => $totalLPG > 0 ? $totalLPGCost / $totalLPG : 0,
+        'avg_yearly_ee' => $years > 0 ? $totalEE / $years : 0,
+        'avg_yearly_lpg' => $years > 0 ? $totalLPG / $years : 0,
+        'num_years' => $years
+    ];
+}
+
+function analyzeYearlyData($data) {
+    $yearlyEE = array_column($data, 'total_ee');
+    $yearlyLPG = array_column($data, 'total_lpg');
+    $years = array_column($data, 'year');
+    
+    // Find peak year
+    $maxEE = !empty($yearlyEE) ? max($yearlyEE) : 0;
+    $maxIndex = array_search($maxEE, $yearlyEE);
+    $peakYear = $maxIndex !== false ? $years[$maxIndex] : null;
+    
+    $maxLPG = !empty($yearlyLPG) ? max($yearlyLPG) : 0;
+    
+    // Calculate average growth
+    $growthRates = [];
+    $lpgGrowthRates = [];
+    
+    for ($i = 0; $i < count($data) - 1; $i++) {
+        if ($data[$i+1]['total_ee'] > 0) {
+            $growth = (($data[$i]['total_ee'] - $data[$i+1]['total_ee']) / $data[$i+1]['total_ee']) * 100;
+            $growthRates[] = $growth;
+        }
+        if ($data[$i+1]['total_lpg'] > 0) {
+            $lpgGrowth = (($data[$i]['total_lpg'] - $data[$i+1]['total_lpg']) / $data[$i+1]['total_lpg']) * 100;
+            $lpgGrowthRates[] = $lpgGrowth;
+        }
+    }
+    
+    $avgGrowth = !empty($growthRates) ? array_sum($growthRates) / count($growthRates) : 0;
+    $avgLPGrowth = !empty($lpgGrowthRates) ? array_sum($lpgGrowthRates) / count($lpgGrowthRates) : 0;
+    
+    return [
+        'peak_year' => $peakYear ? ($peakYear + 543) : '-',
+        'peak_value' => $maxEE,
+        'peak_lpg' => $maxLPG,
+        'avg_growth' => $avgGrowth,
+        'avg_lpg_growth' => $avgLPGrowth,
+        'num_years' => count($data),
+        'trend' => $avgGrowth > 0 ? 'เพิ่มขึ้น' : ($avgGrowth < 0 ? 'ลดลง' : 'คงที่')
+    ];
+}
+
+function prepareYearlyChartData($data) {
+    $labels = [];
+    $values = [];
+    $lpgValues = [];
+    
+    foreach ($data as $row) {
+        $labels[] = $row['year'] + 543;
+        $values[] = $row['total_ee'];
+        $lpgValues[] = $row['total_lpg'];
+    }
+    
+    return [
+        'labels' => $labels,
+        'values' => $values,
+        'lpg' => $lpgValues,
+        'label' => 'หน่วยไฟฟ้ารายปี (kWh)',
+        'lpg_label' => 'หน่วย LPG รายปี (kg)'
+    ];
+}
+
+function getComparisonReport($db, $year1, $year2) {
+    $sql = "
+        SELECT 
+            COALESCE(m1.month, m2.month) as month,
+            COALESCE(m1.total_ee, 0) as ee_current,
+            COALESCE(m2.total_ee, 0) as ee_previous,
+            COALESCE(m1.total_lpg, 0) as lpg_current,
+            COALESCE(m2.total_lpg, 0) as lpg_previous,
+            COALESCE(m1.total_cost, 0) as cost_current,
+            COALESCE(m2.total_cost, 0) as cost_previous,
+            COALESCE(m1.total_lpg_cost, 0) as lpg_cost_current,
+            COALESCE(m2.total_lpg_cost, 0) as lpg_cost_previous
+        FROM (
+            SELECT MONTH(record_date) as month, 
+                   SUM(ee_unit) as total_ee, 
+                   SUM(lpg_unit) as total_lpg,
+                   SUM(total_cost) as total_cost,
+                   SUM(total_lpg_cost) as total_lpg_cost
+            FROM electricity_summary
+            WHERE YEAR(record_date) = ?
+            GROUP BY MONTH(record_date)
+        ) m1
+        LEFT JOIN (
+            SELECT MONTH(record_date) as month, 
+                   SUM(ee_unit) as total_ee, 
+                   SUM(lpg_unit) as total_lpg,
+                   SUM(total_cost) as total_cost,
+                   SUM(total_lpg_cost) as total_lpg_cost
+            FROM electricity_summary
+            WHERE YEAR(record_date) = ?
+            GROUP BY MONTH(record_date)
+        ) m2 ON m1.month = m2.month
+        
+        UNION
+        
+        SELECT 
+            COALESCE(m2.month, m1.month) as month,
+            COALESCE(m1.total_ee, 0) as ee_current,
+            COALESCE(m2.total_ee, 0) as ee_previous,
+            COALESCE(m1.total_lpg, 0) as lpg_current,
+            COALESCE(m2.total_lpg, 0) as lpg_previous,
+            COALESCE(m1.total_cost, 0) as cost_current,
+            COALESCE(m2.total_cost, 0) as cost_previous,
+            COALESCE(m1.total_lpg_cost, 0) as lpg_cost_current,
+            COALESCE(m2.total_lpg_cost, 0) as lpg_cost_previous
+        FROM (
+            SELECT MONTH(record_date) as month, 
+                   SUM(ee_unit) as total_ee, 
+                   SUM(lpg_unit) as total_lpg,
+                   SUM(total_cost) as total_cost,
+                   SUM(total_lpg_cost) as total_lpg_cost
+            FROM electricity_summary
+            WHERE YEAR(record_date) = ?
+            GROUP BY MONTH(record_date)
+        ) m2
+        LEFT JOIN (
+            SELECT MONTH(record_date) as month, 
+                   SUM(ee_unit) as total_ee, 
+                   SUM(lpg_unit) as total_lpg,
+                   SUM(total_cost) as total_cost,
+                   SUM(total_lpg_cost) as total_lpg_cost
+            FROM electricity_summary
+            WHERE YEAR(record_date) = ?
+            GROUP BY MONTH(record_date)
+        ) m1 ON m2.month = m1.month
+        WHERE m1.month IS NULL
+        ORDER BY month
+    ";
+    $stmt = $db->prepare($sql);
+    $stmt->execute([$year1, $year2, $year2, $year1]);
+    return $stmt->fetchAll();
+}
+
+function calculateComparisonSummary($data) {
+    $totalCurrent = 0;
+    $totalPrevious = 0;
+    $totalLPGCurrent = 0;
+    $totalLPGPrevious = 0;
+    
+    foreach ($data as $row) {
+        $totalCurrent += $row['ee_current'];
+        $totalPrevious += $row['ee_previous'];
+        $totalLPGCurrent += $row['lpg_current'];
+        $totalLPGPrevious += $row['lpg_previous'];
+    }
+    
+    return [
+        'total_ee' => $totalCurrent,
+        'total_lpg' => $totalLPGCurrent,
+        'total_cost' => 0,
+        'total_lpg_cost' => 0,
+        'avg_daily' => 0
+    ];
+}
+
+function calculateComparisonStatistics($data) {
+    $totalCurrent = 0;
+    $totalPrevious = 0;
+    $totalLPGCurrent = 0;
+    $totalLPGPrevious = 0;
+    $totalCostCurrent = 0;
+    $totalCostPrevious = 0;
+    $totalLPGCostCurrent = 0;
+    $totalLPGCostPrevious = 0;
+    
+    foreach ($data as $row) {
+        $totalCurrent += $row['ee_current'];
+        $totalPrevious += $row['ee_previous'];
+        $totalLPGCurrent += $row['lpg_current'];
+        $totalLPGPrevious += $row['lpg_previous'];
+        $totalCostCurrent += $row['cost_current'];
+        $totalCostPrevious += $row['cost_previous'];
+        $totalLPGCostCurrent += $row['lpg_cost_current'];
+        $totalLPGCostPrevious += $row['lpg_cost_previous'];
+    }
+    
+    $change = $totalCurrent - $totalPrevious;
+    $changePercent = $totalPrevious > 0 ? ($change / $totalPrevious) * 100 : 0;
+    $lpgChange = $totalLPGCurrent - $totalLPGPrevious;
+    $lpgChangePercent = $totalLPGPrevious > 0 ? ($lpgChange / $totalLPGPrevious) * 100 : 0;
+    
+    return [
+        'total_ee' => $totalCurrent,
+        'total_lpg' => $totalLPGCurrent,
+        'total_cost' => $totalCostCurrent,
+        'total_lpg_cost' => $totalLPGCostCurrent,
+        'avg_cost_per_unit' => $totalCurrent > 0 ? $totalCostCurrent / $totalCurrent : 0,
+        'avg_lpg_cost_per_unit' => $totalLPGCurrent > 0 ? $totalLPGCostCurrent / $totalLPGCurrent : 0,
+        'avg_daily_ee' => 0,
+        'avg_daily_lpg' => 0,
+        'change' => $change,
+        'lpg_change' => $lpgChange,
+        'change_percent' => $changePercent,
+        'lpg_change_percent' => $lpgChangePercent
+    ];
+}
+
+function analyzeComparisonData($data, $year1, $year2) {
+    $monthsWithIncrease = 0;
+    $monthsWithLPGIncrease = 0;
+    $totalIncrease = 0;
+    $totalLPGIncrease = 0;
+    $totalDecrease = 0;
+    $totalLPGDecrease = 0;
+    
+    foreach ($data as $row) {
+        if ($row['ee_current'] > $row['ee_previous']) {
+            $monthsWithIncrease++;
+            $totalIncrease += $row['ee_current'] - $row['ee_previous'];
+        } else {
+            $totalDecrease += $row['ee_previous'] - $row['ee_current'];
+        }
+        
+        if ($row['lpg_current'] > $row['lpg_previous']) {
+            $monthsWithLPGIncrease++;
+            $totalLPGIncrease += $row['lpg_current'] - $row['lpg_previous'];
+        } else {
+            $totalLPGDecrease += $row['lpg_previous'] - $row['lpg_current'];
+        }
+    }
+    
+    return [
+        'months_increase' => $monthsWithIncrease,
+        'months_lpg_increase' => $monthsWithLPGIncrease,
+        'months_decrease' => 12 - $monthsWithIncrease,
+        'months_lpg_decrease' => 12 - $monthsWithLPGIncrease,
+        'total_increase' => $totalIncrease,
+        'total_lpg_increase' => $totalLPGIncrease,
+        'total_decrease' => $totalDecrease,
+        'total_lpg_decrease' => $totalLPGDecrease,
+        'net_change' => $totalIncrease - $totalDecrease,
+        'net_lpg_change' => $totalLPGIncrease - $totalLPGDecrease,
+        'year1' => $year1 + 543,
+        'year2' => $year2 + 543
+    ];
+}
+
+function prepareComparisonChartData($data, $year1, $year2) {
+    $labels = [];
+    $current = [];
+    $previous = [];
+    $lpgCurrent = [];
+    $lpgPrevious = [];
+    
+    foreach ($data as $row) {
+        $labels[] = getThaiShortMonth($row['month']);
+        $current[] = $row['ee_current'];
+        $previous[] = $row['ee_previous'];
+        $lpgCurrent[] = $row['lpg_current'];
+        $lpgPrevious[] = $row['lpg_previous'];
+    }
+    
+    return [
+        'labels' => $labels,
+        'current' => $current,
+        'previous' => $previous,
+        'lpg_current' => $lpgCurrent,
+        'lpg_previous' => $lpgPrevious
+    ];
+}
+
+function getCostAnalysisReport($db, $startDate, $endDate) {
+    $sql = "
+        SELECT *
+        FROM electricity_summary
+        WHERE record_date BETWEEN ? AND ?
+        ORDER BY record_date
+    ";
+    $stmt = $db->prepare($sql);
+    $stmt->execute([$startDate, $endDate]);
+    return $stmt->fetchAll();
+}
+
+function calculateCostAnalysisSummary($data) {
+    $totalEE = 0;
+    $totalLPG = 0;
+    $totalCost = 0;
+    $totalLPGCost = 0;
+    
+    foreach ($data as $row) {
+        $totalEE += $row['ee_unit'];
+        $totalLPG += $row['lpg_unit'] ?? 0;
+        $totalCost += $row['total_cost'];
+        $totalLPGCost += $row['total_lpg_cost'] ?? 0;
+    }
+    
+    return [
+        'total_ee' => $totalEE,
+        'total_lpg' => $totalLPG,
+        'total_cost' => $totalCost,
+        'total_lpg_cost' => $totalLPGCost,
+        'avg_daily' => count($data) > 0 ? $totalEE / count($data) : 0,
+        'avg_lpg_daily' => count($data) > 0 ? $totalLPG / count($data) : 0
+    ];
+}
+
+function calculateCostAnalysisStatistics($data) {
+    $totalEE = 0;
+    $totalLPG = 0;
+    $totalCost = 0;
+    $totalLPGCost = 0;
+    
+    foreach ($data as $row) {
+        $totalEE += $row['ee_unit'];
+        $totalLPG += $row['lpg_unit'] ?? 0;
+        $totalCost += $row['total_cost'];
+        $totalLPGCost += $row['total_lpg_cost'] ?? 0;
+    }
+    
+    return [
+        'total_ee' => $totalEE,
+        'total_lpg' => $totalLPG,
+        'total_cost' => $totalCost,
+        'total_lpg_cost' => $totalLPGCost,
+        'avg_cost_per_unit' => $totalEE > 0 ? $totalCost / $totalEE : 0,
+        'avg_lpg_cost_per_unit' => $totalLPG > 0 ? $totalLPGCost / $totalLPG : 0,
+        'avg_daily_ee' => count($data) > 0 ? $totalEE / count($data) : 0,
+        'avg_daily_lpg' => count($data) > 0 ? $totalLPG / count($data) : 0
+    ];
+}
+
+function analyzeCostData($data) {
+    $costPerUnit = [];
+    $lpgCostPerUnit = [];
+    
+    foreach ($data as $row) {
+        $costPerUnit[] = $row['cost_per_unit'];
+        if (isset($row['lpg_cost_per_unit']) && $row['lpg_cost_per_unit'] > 0) {
+            $lpgCostPerUnit[] = $row['lpg_cost_per_unit'];
+        }
+    }
+    
+    $avgCost = !empty($costPerUnit) ? array_sum($costPerUnit) / count($costPerUnit) : 0;
+    $minCost = !empty($costPerUnit) ? min($costPerUnit) : 0;
+    $maxCost = !empty($costPerUnit) ? max($costPerUnit) : 0;
+    
+    $avgLPGCost = !empty($lpgCostPerUnit) ? array_sum($lpgCostPerUnit) / count($lpgCostPerUnit) : 0;
+    $minLPGCost = !empty($lpgCostPerUnit) ? min($lpgCostPerUnit) : 0;
+    $maxLPGCost = !empty($lpgCostPerUnit) ? max($lpgCostPerUnit) : 0;
+    
+    return [
+        'avg_cost_per_unit' => $avgCost,
+        'min_cost_per_unit' => $minCost,
+        'max_cost_per_unit' => $maxCost,
+        'cost_variance' => $maxCost - $minCost,
+        'avg_lpg_cost_per_unit' => $avgLPGCost,
+        'min_lpg_cost_per_unit' => $minLPGCost,
+        'max_lpg_cost_per_unit' => $maxLPGCost,
+        'lpg_cost_variance' => $maxLPGCost - $minLPGCost,
+        'cost_efficiency' => $avgCost > 0 ? (array_sum(array_column($data, 'ee_unit')) / array_sum(array_column($data, 'total_cost'))) : 0
+    ];
+}
+
+function prepareCostAnalysisChartData($data) {
+    $labels = [];
+    $costPerUnit = [];
+    $lpgCostPerUnit = [];
+    
+    foreach ($data as $row) {
+        $labels[] = date('d/m', strtotime($row['record_date']));
+        $costPerUnit[] = $row['cost_per_unit'];
+        $lpgCostPerUnit[] = $row['lpg_cost_per_unit'] ?? 0;
+    }
+    
+    return [
+        'labels' => $labels,
+        'values' => $costPerUnit,
+        'lpg_values' => $lpgCostPerUnit,
+        'label' => 'ค่าไฟต่อหน่วย (บาท)',
+        'lpg_label' => 'ค่า LPG ต่อหน่วย (บาท)'
+    ];
+}
+
+function getForecastReport($db, $year) {
+    // Simple linear regression forecast
+    // Get last 3 years data
+    $sql = "
+        SELECT 
+            MONTH(record_date) as month,
+            YEAR(record_date) as year,
+            AVG(ee_unit) as avg_ee,
+            AVG(lpg_unit) as avg_lpg
+        FROM electricity_summary
+        WHERE YEAR(record_date) BETWEEN ? AND ?
+        GROUP BY YEAR(record_date), MONTH(record_date)
+        ORDER BY year, month
+    ";
+    $stmt = $db->prepare($sql);
+    $stmt->execute([$year - 2, $year - 1]);
+    $historical = $stmt->fetchAll();
+    
+    // Group by month
+    $monthlyEEData = [];
+    $monthlyLPGData = [];
+    
+    foreach ($historical as $row) {
+        if (!isset($monthlyEEData[$row['month']])) {
+            $monthlyEEData[$row['month']] = [];
+            $monthlyLPGData[$row['month']] = [];
+        }
+        $monthlyEEData[$row['month']][] = $row['avg_ee'];
+        $monthlyLPGData[$row['month']][] = $row['avg_lpg'];
+    }
+    
+    // Calculate forecast for each month
+    $forecast = [];
+    for ($m = 1; $m <= 12; $m++) {
+        $forecastRow = [
+            'month' => $m,
+            'ee_forecast' => 0,
+            'lpg_forecast' => 0,
+            'ee_lower' => 0,
+            'ee_upper' => 0,
+            'lpg_lower' => 0,
+            'lpg_upper' => 0,
+            'confidence' => 0
+        ];
+        
+        if (isset($monthlyEEData[$m]) && count($monthlyEEData[$m]) > 0) {
+            $values = $monthlyEEData[$m];
+            $avg = array_sum($values) / count($values);
+            $std = count($values) > 1 ? stats_standard_deviation($values) : $avg * 0.1;
+            
+            $forecastRow['ee_forecast'] = $avg;
+            $forecastRow['ee_lower'] = $avg - (1.96 * $std);
+            $forecastRow['ee_upper'] = $avg + (1.96 * $std);
+            $forecastRow['confidence'] = 95;
+        }
+        
+        if (isset($monthlyLPGData[$m]) && count($monthlyLPGData[$m]) > 0) {
+            $values = $monthlyLPGData[$m];
+            $avg = array_sum($values) / count($values);
+            $std = count($values) > 1 ? stats_standard_deviation($values) : $avg * 0.1;
+            
+            $forecastRow['lpg_forecast'] = $avg;
+            $forecastRow['lpg_lower'] = $avg - (1.96 * $std);
+            $forecastRow['lpg_upper'] = $avg + (1.96 * $std);
+        }
+        
+        $forecast[] = $forecastRow;
+    }
+    
+    return $forecast;
+}
+
+function stats_standard_deviation($array) {
+    $n = count($array);
+    if ($n === 0) return 0;
+    $mean = array_sum($array) / $n;
+    $carry = 0.0;
+    foreach ($array as $val) {
+        $carry += pow($val - $mean, 2);
+    }
+    return sqrt($carry / ($n - 1));
+}
+
+function calculateForecastSummary($data) {
+    $totalForecast = 0;
+    $totalLPGforecast = 0;
+    
+    foreach ($data as $row) {
+        $totalForecast += $row['ee_forecast'];
+        $totalLPGforecast += $row['lpg_forecast'];
+    }
+    
+    return [
+        'total_ee' => $totalForecast,
+        'total_lpg' => $totalLPGforecast,
+        'total_cost' => 0,
+        'total_lpg_cost' => 0,
+        'avg_daily' => $totalForecast / 365,
+        'avg_lpg_daily' => $totalLPGforecast / 365
+    ];
+}
+
+function calculateForecastStatistics($data) {
+    $forecastValues = array_column($data, 'ee_forecast');
+    $lpgForecastValues = array_column($data, 'lpg_forecast');
+    
+    return [
+        'total_ee' => array_sum($forecastValues),
+        'total_lpg' => array_sum($lpgForecastValues),
+        'total_cost' => 0,
+        'total_lpg_cost' => 0,
+        'avg_cost_per_unit' => 0,
+        'avg_lpg_cost_per_unit' => 0,
+        'avg_daily_ee' => array_sum($forecastValues) / 365,
+        'avg_daily_lpg' => array_sum($lpgForecastValues) / 365,
+        'max_monthly' => !empty($forecastValues) ? max($forecastValues) : 0,
+        'max_lpg_monthly' => !empty($lpgForecastValues) ? max($lpgForecastValues) : 0,
+        'min_monthly' => !empty($forecastValues) ? min($forecastValues) : 0,
+        'min_lpg_monthly' => !empty($lpgForecastValues) ? min($lpgForecastValues) : 0
+    ];
+}
+
+function analyzeForecastData($data) {
+    $forecastValues = array_column($data, 'ee_forecast');
+    $lpgForecastValues = array_column($data, 'lpg_forecast');
+    $lowerBounds = array_column($data, 'ee_lower');
+    $upperBounds = array_column($data, 'ee_upper');
+    $lpgLowerBounds = array_column($data, 'lpg_lower');
+    $lpgUpperBounds = array_column($data, 'lpg_upper');
+    
+    $totalRange = 0;
+    $totalLPGRange = 0;
+    
+    for ($i = 0; $i < count($data); $i++) {
+        $totalRange += $upperBounds[$i] - $lowerBounds[$i];
+        $totalLPGRange += $lpgUpperBounds[$i] - $lpgLowerBounds[$i];
+    }
+    
+    return [
+        'total_forecast' => array_sum($forecastValues),
+        'total_lpg_forecast' => array_sum($lpgForecastValues),
+        'avg_range' => count($data) > 0 ? $totalRange / count($data) : 0,
+        'avg_lpg_range' => count($data) > 0 ? $totalLPGRange / count($data) : 0,
+        'peak_month' => array_search(max($forecastValues), $forecastValues) + 1,
+        'peak_lpg_month' => array_search(max($lpgForecastValues), $lpgForecastValues) + 1,
+        'low_month' => array_search(min($forecastValues), $forecastValues) + 1,
+        'low_lpg_month' => array_search(min($lpgForecastValues), $lpgForecastValues) + 1,
+        'confidence_months' => count(array_filter(array_column($data, 'confidence'), function($c) { return $c > 0; }))
+    ];
+}
+
+function prepareForecastChartData($data) {
+    $labels = [];
+    $forecast = [];
+    $lower = [];
+    $upper = [];
+    $lpgForecast = [];
+    $lpgLower = [];
+    $lpgUpper = [];
+    
+    foreach ($data as $row) {
+        $labels[] = getThaiShortMonth($row['month']);
+        $forecast[] = $row['ee_forecast'];
+        $lower[] = $row['ee_lower'];
+        $upper[] = $row['ee_upper'];
+        $lpgForecast[] = $row['lpg_forecast'];
+        $lpgLower[] = $row['lpg_lower'];
+        $lpgUpper[] = $row['lpg_upper'];
+    }
+    
+    return [
+        'labels' => $labels,
+        'datasets' => [
+            [
+                'label' => 'ไฟฟ้า - ค่าพยากรณ์',
+                'data' => $forecast,
+                'borderColor' => '#007bff',
+                'backgroundColor' => 'rgba(0, 123, 255, 0.1)',
+                'borderWidth' => 2,
+                'tension' => 0.4,
+                'fill' => false,
+                'yAxisID' => 'y'
+            ],
+            [
+                'label' => 'ไฟฟ้า - ช่วงบน',
+                'data' => $upper,
+                'borderColor' => 'rgba(0, 123, 255, 0.3)',
+                'borderWidth' => 1,
+                'borderDash' => [5, 5],
+                'fill' => '+1',
+                'backgroundColor' => 'rgba(0, 123, 255, 0.05)',
+                'pointRadius' => 0,
+                'yAxisID' => 'y'
+            ],
+            [
+                'label' => 'ไฟฟ้า - ช่วงล่าง',
+                'data' => $lower,
+                'borderColor' => 'rgba(0, 123, 255, 0.3)',
+                'borderWidth' => 1,
+                'borderDash' => [5, 5],
+                'fill' => false,
+                'pointRadius' => 0,
+                'yAxisID' => 'y'
+            ],
+            [
+                'label' => 'LPG - ค่าพยากรณ์',
+                'data' => $lpgForecast,
+                'borderColor' => '#dc3545',
+                'backgroundColor' => 'rgba(220, 53, 69, 0.1)',
+                'borderWidth' => 2,
+                'tension' => 0.4,
+                'fill' => false,
+                'yAxisID' => 'y1'
+            ],
+            [
+                'label' => 'LPG - ช่วงบน',
+                'data' => $lpgUpper,
+                'borderColor' => 'rgba(220, 53, 69, 0.3)',
+                'borderWidth' => 1,
+                'borderDash' => [5, 5],
+                'fill' => '+1',
+                'backgroundColor' => 'rgba(220, 53, 69, 0.05)',
+                'pointRadius' => 0,
+                'yAxisID' => 'y1'
+            ],
+            [
+                'label' => 'LPG - ช่วงล่าง',
+                'data' => $lpgLower,
+                'borderColor' => 'rgba(220, 53, 69, 0.3)',
+                'borderWidth' => 1,
+                'borderDash' => [5, 5],
+                'fill' => false,
+                'pointRadius' => 0,
+                'yAxisID' => 'y1'
+            ]
+        ],
+        'options' => [
+            'scales' => [
+                'y' => [
+                    'type' => 'linear',
+                    'display' => true,
+                    'position' => 'left',
+                    'title' => [
+                        'display' => true,
+                        'text' => 'หน่วยไฟฟ้า (kWh)'
+                    ]
+                ],
+                'y1' => [
+                    'type' => 'linear',
+                    'display' => true,
+                    'position' => 'right',
+                    'title' => [
+                        'display' => true,
+                        'text' => 'หน่วย LPG (kg)'
+                    ],
+                    'grid' => [
+                        'drawOnChartArea' => false
+                    ]
+                ]
+            ]
+        ]
+    ];
+}
+?>
+
 <script>
 let reportChart = null;
 
 $(document).ready(function() {
     // Initialize date pickers
-    $('#startDatePicker').datetimepicker({
-        format: 'DD/MM/YYYY',
-        locale: 'th',
-        useCurrent: false
-    });
+    if ($('#startDatePicker').length) {
+        $('#startDatePicker').datetimepicker({
+            format: 'DD/MM/YYYY',
+            locale: 'th',
+            useCurrent: false
+        });
+    }
     
-    $('#endDatePicker').datetimepicker({
-        format: 'DD/MM/YYYY',
-        locale: 'th',
-        useCurrent: false
-    });
+    if ($('#endDatePicker').length) {
+        $('#endDatePicker').datetimepicker({
+            format: 'DD/MM/YYYY',
+            locale: 'th',
+            useCurrent: false
+        });
+    }
     
     // Initialize DataTable if exists
-    if ($('#reportTable').length) {
+    if ($('#reportTable').length && typeof $.fn.DataTable !== 'undefined') {
         $('#reportTable').DataTable({
             language: {
-                url: '//cdn.datatables.net/plug-ins/1.10.21/i18n/Thai.json'
+                url: 'https://cdn.datatables.net/plug-ins/1.10.21/i18n/Thai.json'
             },
             pageLength: 25,
             order: [[0, 'desc']]
@@ -601,12 +1660,14 @@ $(document).ready(function() {
     
     // Chart type change
     $('#chartType').on('change', function() {
-        renderChart(<?php echo json_encode($chartData); ?>, $(this).val());
+        const chartData = <?php echo !empty($chartData) ? json_encode($chartData) : 'null'; ?>;
+        renderChart(chartData, $(this).val());
     });
     
     // Render initial chart
     <?php if (!empty($chartData)): ?>
-    renderChart(<?php echo json_encode($chartData); ?>, '<?php echo $chartType; ?>');
+    const chartData = <?php echo json_encode($chartData); ?>;
+    renderChart(chartData, '<?php echo $chartType; ?>');
     <?php endif; ?>
 });
 
@@ -614,33 +1675,42 @@ function toggleReportFields() {
     const type = $('#reportType').val();
     
     // Hide all optional fields first
-    $('#dateRangeDiv').hide();
-    $('#endDateDiv').hide();
-    $('#yearDiv').hide();
-    $('#compareYearDiv').hide();
-    $('#compareDiv').hide();
+    $('#dateRangeDiv, #endDateDiv, #yearDiv, #compareYearDiv, #compareDiv').hide();
     
     if (type === 'daily' || type === 'cost_analysis') {
-        $('#dateRangeDiv').show();
-        $('#endDateDiv').show();
+        $('#dateRangeDiv, #endDateDiv').show();
     } else if (type === 'monthly') {
         $('#yearDiv').show();
     } else if (type === 'yearly') {
         // No additional fields needed
     } else if (type === 'comparison') {
-        $('#yearDiv').show();
-        $('#compareYearDiv').show();
+        $('#yearDiv, #compareYearDiv').show();
     } else if (type === 'forecast') {
-        $('#yearDiv').show();
-        $('#compareDiv').show();
+        $('#yearDiv, #compareDiv').show();
     }
 }
 
 function renderChart(data, type) {
-    const ctx = document.getElementById('reportChart').getContext('2d');
+    console.log('Rendering chart with type:', type);
+    console.log('Chart data:', data);
+    
+    const ctx = document.getElementById('reportChart');
+    if (!ctx) {
+        console.error('Canvas element #reportChart not found');
+        return;
+    }
     
     if (reportChart) {
         reportChart.destroy();
+    }
+    
+    // ถ้าไม่มีข้อมูล ให้ซ่อน chart container
+    if (!data || !data.labels || data.labels.length === 0) {
+        console.warn('No chart data to render');
+        $('#reportChart').closest('.card').hide();
+        return;
+    } else {
+        $('#reportChart').closest('.card').show();
     }
     
     let chartType = type;
@@ -685,10 +1755,11 @@ function renderChart(data, type) {
         };
     }
     
-    // Add datasets based on data structure
-    if (data.datasets) {
+    // Add datasets based on data structure - รองรับ LPG
+    if (data.datasets && Array.isArray(data.datasets) && data.datasets.length > 0) {
         chartConfig.data.datasets = data.datasets;
-    } else if (data.ee && data.cost) {
+    } 
+    else if (data.ee && data.lpg) {
         chartConfig.data = {
             labels: data.labels,
             datasets: [
@@ -699,6 +1770,61 @@ function renderChart(data, type) {
                     backgroundColor: type === 'area' ? 'rgba(255, 193, 7, 0.2)' : 'rgba(255, 193, 7, 0.1)',
                     yAxisID: 'y',
                     unit: ' kWh',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: type === 'area'
+                },
+                {
+                    label: 'หน่วย LPG (kg)',
+                    data: data.lpg,
+                    borderColor: '#dc3545',
+                    backgroundColor: type === 'area' ? 'rgba(220, 53, 69, 0.2)' : 'rgba(220, 53, 69, 0.1)',
+                    yAxisID: 'y1',
+                    unit: ' kg',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: type === 'area'
+                }
+            ]
+        };
+        
+        chartConfig.options.scales = {
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                title: {
+                    display: true,
+                    text: 'หน่วยไฟฟ้า (kWh)'
+                }
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                title: {
+                    display: true,
+                    text: 'หน่วย LPG (kg)'
+                },
+                grid: {
+                    drawOnChartArea: false
+                }
+            }
+        };
+    }
+    else if (data.ee && data.cost) {
+        chartConfig.data = {
+            labels: data.labels,
+            datasets: [
+                {
+                    label: 'หน่วยไฟฟ้า (kWh)',
+                    data: data.ee,
+                    borderColor: '#ffc107',
+                    backgroundColor: type === 'area' ? 'rgba(255, 193, 7, 0.2)' : 'rgba(255, 193, 7, 0.1)',
+                    yAxisID: 'y',
+                    unit: ' kWh',
+                    borderWidth: 2,
+                    tension: 0.4,
                     fill: type === 'area'
                 },
                 {
@@ -708,6 +1834,8 @@ function renderChart(data, type) {
                     backgroundColor: type === 'area' ? 'rgba(40, 167, 69, 0.2)' : 'rgba(40, 167, 69, 0.1)',
                     yAxisID: 'y1',
                     unit: ' บาท',
+                    borderWidth: 2,
+                    tension: 0.4,
                     fill: type === 'area'
                 }
             ]
@@ -736,43 +1864,133 @@ function renderChart(data, type) {
                 }
             }
         };
-    } else if (data.current && data.previous) {
+    } 
+    else if (data.current && data.previous) {
         chartConfig.data = {
             labels: data.labels,
             datasets: [
                 {
-                    label: 'ปีปัจจุบัน',
+                    label: 'ปีปัจจุบัน (ไฟฟ้า)',
                     data: data.current,
                     borderColor: '#007bff',
                     backgroundColor: type === 'area' ? 'rgba(0, 123, 255, 0.2)' : 'rgba(0, 123, 255, 0.1)',
                     borderWidth: 2,
                     tension: 0.4,
-                    fill: type === 'area'
+                    fill: type === 'area',
+                    yAxisID: 'y'
                 },
                 {
-                    label: 'ปีเปรียบเทียบ',
+                    label: 'ปีเปรียบเทียบ (ไฟฟ้า)',
                     data: data.previous,
                     borderColor: '#6c757d',
                     backgroundColor: type === 'area' ? 'rgba(108, 117, 125, 0.2)' : 'rgba(108, 117, 125, 0.1)',
                     borderWidth: 2,
                     tension: 0.4,
-                    fill: type === 'area'
+                    fill: type === 'area',
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'ปีปัจจุบัน (LPG)',
+                    data: data.lpg_current || [],
+                    borderColor: '#dc3545',
+                    backgroundColor: type === 'area' ? 'rgba(220, 53, 69, 0.2)' : 'rgba(220, 53, 69, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: type === 'area',
+                    yAxisID: 'y1'
+                },
+                {
+                    label: 'ปีเปรียบเทียบ (LPG)',
+                    data: data.lpg_previous || [],
+                    borderColor: '#fd7e14',
+                    backgroundColor: type === 'area' ? 'rgba(253, 126, 20, 0.2)' : 'rgba(253, 126, 20, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: type === 'area',
+                    yAxisID: 'y1'
                 }
             ]
         };
-    } else {
+        
+        chartConfig.options.scales = {
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                title: {
+                    display: true,
+                    text: 'หน่วยไฟฟ้า (kWh)'
+                }
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                title: {
+                    display: true,
+                    text: 'หน่วย LPG (kg)'
+                },
+                grid: {
+                    drawOnChartArea: false
+                }
+            }
+        };
+    } 
+    else if (data.values && Array.isArray(data.values)) {
         chartConfig.data.datasets = [{
             label: data.label || 'ปริมาณ',
-            data: data.values || [],
+            data: data.values,
             borderColor: '#007bff',
             backgroundColor: type === 'area' ? 'rgba(0, 123, 255, 0.2)' : 'rgba(0, 123, 255, 0.1)',
             borderWidth: 2,
             tension: 0.4,
             fill: type === 'area'
         }];
+        
+        if (data.lpg && Array.isArray(data.lpg)) {
+            chartConfig.data.datasets.push({
+                label: data.lpg_label || 'ปริมาณ LPG',
+                data: data.lpg,
+                borderColor: '#dc3545',
+                backgroundColor: type === 'area' ? 'rgba(220, 53, 69, 0.2)' : 'rgba(220, 53, 69, 0.1)',
+                borderWidth: 2,
+                tension: 0.4,
+                fill: type === 'area',
+                yAxisID: 'y1'
+            });
+            
+            chartConfig.options.scales = {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: data.label || 'ปริมาณ'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: data.lpg_label || 'ปริมาณ LPG'
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                }
+            };
+        }
     }
     
-    reportChart = new Chart(ctx, chartConfig);
+    try {
+        reportChart = new Chart(ctx, chartConfig);
+        console.log('Chart rendered successfully');
+    } catch (e) {
+        console.error('Error rendering chart:', e);
+    }
 }
 
 function exportReport() {
@@ -783,704 +2001,6 @@ function exportReport() {
 function printReport() {
     window.print();
 }
-
-<?php
-// Report data fetching functions
-function getDailyReport($db, $startDate, $endDate) {
-    $sql = "
-        SELECT 
-            *,
-            (SELECT AVG(ee_unit) FROM electricity_summary WHERE record_date BETWEEN ? AND ?) as avg_ee
-        FROM electricity_summary
-        WHERE record_date BETWEEN ? AND ?
-        ORDER BY record_date
-    ";
-    $stmt = $db->prepare($sql);
-    $stmt->execute([$startDate, $endDate, $startDate, $endDate]);
-    $data = $stmt->fetchAll();
-    
-    // Add previous day comparison
-    for ($i = 0; $i < count($data); $i++) {
-        if ($i > 0) {
-            $data[$i]['prev_ee'] = $data[$i-1]['ee_unit'];
-        }
-    }
-    
-    return $data;
-}
-
-function calculateDailySummary($data) {
-    $totalEE = 0;
-    $totalCost = 0;
-    $days = count($data);
-    
-    foreach ($data as $row) {
-        $totalEE += $row['ee_unit'];
-        $totalCost += $row['total_cost'];
-    }
-    
-    return [
-        'total_ee' => $totalEE,
-        'total_cost' => $totalCost,
-        'avg_daily' => $days > 0 ? $totalEE / $days : 0
-    ];
-}
-
-function calculateDailyStatistics($data) {
-    $totalEE = 0;
-    $totalCost = 0;
-    $days = count($data);
-    $eeValues = array_column($data, 'ee_unit');
-    $costValues = array_column($data, 'total_cost');
-    
-    foreach ($data as $row) {
-        $totalEE += $row['ee_unit'];
-        $totalCost += $row['total_cost'];
-    }
-    
-    return [
-        'total_ee' => $totalEE,
-        'total_cost' => $totalCost,
-        'avg_cost_per_unit' => $totalEE > 0 ? $totalCost / $totalEE : 0,
-        'avg_daily_ee' => $days > 0 ? $totalEE / $days : 0,
-        'max_ee' => !empty($eeValues) ? max($eeValues) : 0,
-        'min_ee' => !empty($eeValues) ? min($eeValues) : 0
-    ];
-}
-
-function analyzeDailyData($data) {
-    $eeValues = array_column($data, 'ee_unit');
-    $dates = array_column($data, 'record_date');
-    
-    // Find peak day
-    $maxEE = !empty($eeValues) ? max($eeValues) : 0;
-    $maxIndex = array_search($maxEE, $eeValues);
-    $peakDate = $maxIndex !== false ? $dates[$maxIndex] : null;
-    
-    // Calculate growth rate
-    $firstEE = !empty($eeValues) ? $eeValues[0] : 0;
-    $lastEE = !empty($eeValues) ? $eeValues[count($eeValues)-1] : 0;
-    $growthRate = $firstEE > 0 ? (($lastEE - $firstEE) / $firstEE) * 100 : 0;
-    
-    return [
-        'peak_value' => $maxEE,
-        'peak_date' => $peakDate ? date('d/m/Y', strtotime($peakDate)) : '-',
-        'growth_rate' => $growthRate,
-        'data_points' => count($data)
-    ];
-}
-
-function prepareDailyChartData($data) {
-    $labels = [];
-    $ee = [];
-    $cost = [];
-    
-    foreach ($data as $row) {
-        $labels[] = date('d/m', strtotime($row['record_date']));
-        $ee[] = $row['ee_unit'];
-        $cost[] = $row['total_cost'];
-    }
-    
-    return [
-        'labels' => $labels,
-        'ee' => $ee,
-        'cost' => $cost
-    ];
-}
-
-function getMonthlyReport($db, $year) {
-    $sql = "
-        SELECT 
-            MONTH(record_date) as month,
-            YEAR(record_date) as year,
-            COUNT(*) as days_count,
-            SUM(ee_unit) as total_ee,
-            SUM(total_cost) as total_cost,
-            AVG(cost_per_unit) as avg_cost,
-            AVG(ee_unit) as avg_daily,
-            MAX(ee_unit) as max_daily,
-            MIN(ee_unit) as min_daily
-        FROM electricity_summary
-        WHERE YEAR(record_date) = ?
-        GROUP BY YEAR(record_date), MONTH(record_date)
-        ORDER BY month
-    ";
-    $stmt = $db->prepare($sql);
-    $stmt->execute([$year]);
-    return $stmt->fetchAll();
-}
-
-function calculateMonthlySummary($data) {
-    $totalEE = 0;
-    $totalCost = 0;
-    $months = count($data);
-    
-    foreach ($data as $row) {
-        $totalEE += $row['total_ee'];
-        $totalCost += $row['total_cost'];
-    }
-    
-    return [
-        'total_ee' => $totalEE,
-        'total_cost' => $totalCost,
-        'avg_daily' => $months > 0 ? $totalEE / $months : 0
-    ];
-}
-
-function calculateMonthlyStatistics($data) {
-    $totalEE = 0;
-    $totalCost = 0;
-    $months = count($data);
-    $monthlyEE = array_column($data, 'total_ee');
-    
-    foreach ($data as $row) {
-        $totalEE += $row['total_ee'];
-        $totalCost += $row['total_cost'];
-    }
-    
-    return [
-        'total_ee' => $totalEE,
-        'total_cost' => $totalCost,
-        'avg_cost_per_unit' => $totalEE > 0 ? $totalCost / $totalEE : 0,
-        'avg_daily_ee' => $months > 0 ? $totalEE / $months : 0,
-        'max_monthly' => !empty($monthlyEE) ? max($monthlyEE) : 0,
-        'min_monthly' => !empty($monthlyEE) ? min($monthlyEE) : 0
-    ];
-}
-
-function analyzeMonthlyData($data, $year) {
-    $monthlyEE = array_column($data, 'total_ee');
-    $months = array_column($data, 'month');
-    
-    // Find peak month
-    $maxEE = !empty($monthlyEE) ? max($monthlyEE) : 0;
-    $maxIndex = array_search($maxEE, $monthlyEE);
-    $peakMonth = $maxIndex !== false ? $months[$maxIndex] : null;
-    
-    // Calculate average
-    $avgEE = !empty($monthlyEE) ? array_sum($monthlyEE) / count($monthlyEE) : 0;
-    
-    // Get previous year data for comparison
-    $db = getDB();
-    $stmt = $db->prepare("
-        SELECT SUM(ee_unit) as total_ee
-        FROM electricity_summary
-        WHERE YEAR(record_date) = ?
-    ");
-    $stmt->execute([$year - 1]);
-    $prevYear = $stmt->fetch();
-    
-    $growthRate = $prevYear && $prevYear['total_ee'] > 0 ? 
-                  ((array_sum($monthlyEE) - $prevYear['total_ee']) / $prevYear['total_ee']) * 100 : 0;
-    
-    return [
-        'peak_month' => $peakMonth ? getThaiMonth($peakMonth) : '-',
-        'peak_value' => $maxEE,
-        'avg_monthly' => $avgEE,
-        'growth_rate' => $growthRate,
-        'total_months' => count($data)
-    ];
-}
-
-function prepareMonthlyChartData($data) {
-    $labels = [];
-    $ee = [];
-    $cost = [];
-    
-    foreach ($data as $row) {
-        $labels[] = getThaiShortMonth($row['month']);
-        $ee[] = $row['total_ee'];
-        $cost[] = $row['total_cost'];
-    }
-    
-    return [
-        'labels' => $labels,
-        'ee' => $ee,
-        'cost' => $cost
-    ];
-}
-
-function getYearlyReport($db) {
-    $sql = "
-        SELECT 
-            YEAR(record_date) as year,
-            COUNT(*) as days_count,
-            SUM(ee_unit) as total_ee,
-            SUM(total_cost) as total_cost,
-            AVG(cost_per_unit) as avg_cost,
-            AVG(ee_unit) as avg_daily
-        FROM electricity_summary
-        GROUP BY YEAR(record_date)
-        ORDER BY year DESC
-    ";
-    $stmt = $db->query($sql);
-    $data = $stmt->fetchAll();
-    
-    // Calculate growth for each year
-    for ($i = 0; $i < count($data); $i++) {
-        if ($i < count($data) - 1) {
-            $current = $data[$i]['total_ee'];
-            $previous = $data[$i+1]['total_ee'];
-            $data[$i]['growth'] = $previous > 0 ? (($current - $previous) / $previous) * 100 : 0;
-        }
-    }
-    
-    return $data;
-}
-
-function calculateYearlySummary($data) {
-    $totalEE = 0;
-    $totalCost = 0;
-    $years = count($data);
-    
-    foreach ($data as $row) {
-        $totalEE += $row['total_ee'];
-        $totalCost += $row['total_cost'];
-    }
-    
-    return [
-        'total_ee' => $totalEE,
-        'total_cost' => $totalCost,
-        'avg_yearly' => $years > 0 ? $totalEE / $years : 0
-    ];
-}
-
-function calculateYearlyStatistics($data) {
-    $totalEE = 0;
-    $totalCost = 0;
-    $years = count($data);
-    
-    foreach ($data as $row) {
-        $totalEE += $row['total_ee'];
-        $totalCost += $row['total_cost'];
-    }
-    
-    return [
-        'total_ee' => $totalEE,
-        'total_cost' => $totalCost,
-        'avg_cost_per_unit' => $totalEE > 0 ? $totalCost / $totalEE : 0,
-        'avg_yearly_ee' => $years > 0 ? $totalEE / $years : 0,
-        'num_years' => $years
-    ];
-}
-
-function analyzeYearlyData($data) {
-    $yearlyEE = array_column($data, 'total_ee');
-    $years = array_column($data, 'year');
-    
-    // Find peak year
-    $maxEE = !empty($yearlyEE) ? max($yearlyEE) : 0;
-    $maxIndex = array_search($maxEE, $yearlyEE);
-    $peakYear = $maxIndex !== false ? $years[$maxIndex] : null;
-    
-    // Calculate average growth
-    $growthRates = [];
-    for ($i = 0; $i < count($data) - 1; $i++) {
-        if ($data[$i+1]['total_ee'] > 0) {
-            $growth = (($data[$i]['total_ee'] - $data[$i+1]['total_ee']) / $data[$i+1]['total_ee']) * 100;
-            $growthRates[] = $growth;
-        }
-    }
-    $avgGrowth = !empty($growthRates) ? array_sum($growthRates) / count($growthRates) : 0;
-    
-    return [
-        'peak_year' => $peakYear ? ($peakYear + 543) : '-',
-        'peak_value' => $maxEE,
-        'avg_growth' => $avgGrowth,
-        'num_years' => count($data),
-        'trend' => $avgGrowth > 0 ? 'เพิ่มขึ้น' : ($avgGrowth < 0 ? 'ลดลง' : 'คงที่')
-    ];
-}
-
-function prepareYearlyChartData($data) {
-    $labels = [];
-    $values = [];
-    
-    foreach ($data as $row) {
-        $labels[] = $row['year'] + 543;
-        $values[] = $row['total_ee'];
-    }
-    
-    return [
-        'labels' => $labels,
-        'values' => $values,
-        'label' => 'หน่วยไฟฟ้ารายปี (kWh)'
-    ];
-}
-
-function getComparisonReport($db, $year1, $year2) {
-    $sql = "
-        SELECT 
-            COALESCE(m1.month, m2.month) as month,
-            COALESCE(m1.total_ee, 0) as ee_current,
-            COALESCE(m2.total_ee, 0) as ee_previous,
-            COALESCE(m1.total_cost, 0) as cost_current,
-            COALESCE(m2.total_cost, 0) as cost_previous
-        FROM (
-            SELECT MONTH(record_date) as month, SUM(ee_unit) as total_ee, SUM(total_cost) as total_cost
-            FROM electricity_summary
-            WHERE YEAR(record_date) = ?
-            GROUP BY MONTH(record_date)
-        ) m1
-        LEFT JOIN (
-            SELECT MONTH(record_date) as month, SUM(ee_unit) as total_ee, SUM(total_cost) as total_cost
-            FROM electricity_summary
-            WHERE YEAR(record_date) = ?
-            GROUP BY MONTH(record_date)
-        ) m2 ON m1.month = m2.month
-        
-        UNION
-        
-        SELECT 
-            COALESCE(m2.month, m1.month) as month,
-            COALESCE(m1.total_ee, 0) as ee_current,
-            COALESCE(m2.total_ee, 0) as ee_previous,
-            COALESCE(m1.total_cost, 0) as cost_current,
-            COALESCE(m2.total_cost, 0) as cost_previous
-        FROM (
-            SELECT MONTH(record_date) as month, SUM(ee_unit) as total_ee, SUM(total_cost) as total_cost
-            FROM electricity_summary
-            WHERE YEAR(record_date) = ?
-            GROUP BY MONTH(record_date)
-        ) m2
-        LEFT JOIN (
-            SELECT MONTH(record_date) as month, SUM(ee_unit) as total_ee, SUM(total_cost) as total_cost
-            FROM electricity_summary
-            WHERE YEAR(record_date) = ?
-            GROUP BY MONTH(record_date)
-        ) m1 ON m2.month = m1.month
-        WHERE m1.month IS NULL
-        ORDER BY month
-    ";
-    $stmt = $db->prepare($sql);
-    $stmt->execute([$year1, $year2, $year2, $year1]);
-    return $stmt->fetchAll();
-}
-
-function calculateComparisonSummary($data) {
-    $totalCurrent = 0;
-    $totalPrevious = 0;
-    
-    foreach ($data as $row) {
-        $totalCurrent += $row['ee_current'];
-        $totalPrevious += $row['ee_previous'];
-    }
-    
-    return [
-        'total_ee' => $totalCurrent,
-        'total_cost' => 0,
-        'avg_daily' => 0
-    ];
-}
-
-function calculateComparisonStatistics($data) {
-    $totalCurrent = 0;
-    $totalPrevious = 0;
-    $totalCostCurrent = 0;
-    $totalCostPrevious = 0;
-    
-    foreach ($data as $row) {
-        $totalCurrent += $row['ee_current'];
-        $totalPrevious += $row['ee_previous'];
-        $totalCostCurrent += $row['cost_current'];
-        $totalCostPrevious += $row['cost_previous'];
-    }
-    
-    $change = $totalCurrent - $totalPrevious;
-    $changePercent = $totalPrevious > 0 ? ($change / $totalPrevious) * 100 : 0;
-    
-    return [
-        'total_ee' => $totalCurrent,
-        'total_cost' => $totalCostCurrent,
-        'avg_cost_per_unit' => $totalCurrent > 0 ? $totalCostCurrent / $totalCurrent : 0,
-        'avg_daily_ee' => 0,
-        'change' => $change,
-        'change_percent' => $changePercent
-    ];
-}
-
-function analyzeComparisonData($data, $year1, $year2) {
-    $monthsWithIncrease = 0;
-    $totalIncrease = 0;
-    $totalDecrease = 0;
-    
-    foreach ($data as $row) {
-        if ($row['ee_current'] > $row['ee_previous']) {
-            $monthsWithIncrease++;
-            $totalIncrease += $row['ee_current'] - $row['ee_previous'];
-        } else {
-            $totalDecrease += $row['ee_previous'] - $row['ee_current'];
-        }
-    }
-    
-    return [
-        'months_increase' => $monthsWithIncrease,
-        'months_decrease' => 12 - $monthsWithIncrease,
-        'total_increase' => $totalIncrease,
-        'total_decrease' => $totalDecrease,
-        'net_change' => $totalIncrease - $totalDecrease,
-        'year1' => $year1 + 543,
-        'year2' => $year2 + 543
-    ];
-}
-
-function prepareComparisonChartData($data, $year1, $year2) {
-    $labels = [];
-    $current = [];
-    $previous = [];
-    
-    foreach ($data as $row) {
-        $labels[] = getThaiShortMonth($row['month']);
-        $current[] = $row['ee_current'];
-        $previous[] = $row['ee_previous'];
-    }
-    
-    return [
-        'labels' => $labels,
-        'current' => $current,
-        'previous' => $previous
-    ];
-}
-
-function getCostAnalysisReport($db, $startDate, $endDate) {
-    $sql = "
-        SELECT *
-        FROM electricity_summary
-        WHERE record_date BETWEEN ? AND ?
-        ORDER BY record_date
-    ";
-    $stmt = $db->prepare($sql);
-    $stmt->execute([$startDate, $endDate]);
-    return $stmt->fetchAll();
-}
-
-function calculateCostAnalysisSummary($data) {
-    $totalEE = 0;
-    $totalCost = 0;
-    
-    foreach ($data as $row) {
-        $totalEE += $row['ee_unit'];
-        $totalCost += $row['total_cost'];
-    }
-    
-    return [
-        'total_ee' => $totalEE,
-        'total_cost' => $totalCost,
-        'avg_daily' => count($data) > 0 ? $totalEE / count($data) : 0
-    ];
-}
-
-function calculateCostAnalysisStatistics($data) {
-    $totalEE = 0;
-    $totalCost = 0;
-    
-    foreach ($data as $row) {
-        $totalEE += $row['ee_unit'];
-        $totalCost += $row['total_cost'];
-    }
-    
-    return [
-        'total_ee' => $totalEE,
-        'total_cost' => $totalCost,
-        'avg_cost_per_unit' => $totalEE > 0 ? $totalCost / $totalEE : 0,
-        'avg_daily_ee' => count($data) > 0 ? $totalEE / count($data) : 0
-    ];
-}
-
-function analyzeCostData($data) {
-    $costPerUnit = [];
-    foreach ($data as $row) {
-        $costPerUnit[] = $row['cost_per_unit'];
-    }
-    
-    $avgCost = !empty($costPerUnit) ? array_sum($costPerUnit) / count($costPerUnit) : 0;
-    $minCost = !empty($costPerUnit) ? min($costPerUnit) : 0;
-    $maxCost = !empty($costPerUnit) ? max($costPerUnit) : 0;
-    
-    return [
-        'avg_cost_per_unit' => $avgCost,
-        'min_cost_per_unit' => $minCost,
-        'max_cost_per_unit' => $maxCost,
-        'cost_variance' => $maxCost - $minCost,
-        'cost_efficiency' => $avgCost > 0 ? (array_sum(array_column($data, 'ee_unit')) / array_sum(array_column($data, 'total_cost'))) : 0
-    ];
-}
-
-function prepareCostAnalysisChartData($data) {
-    $labels = [];
-    $costPerUnit = [];
-    
-    foreach ($data as $row) {
-        $labels[] = date('d/m', strtotime($row['record_date']));
-        $costPerUnit[] = $row['cost_per_unit'];
-    }
-    
-    return [
-        'labels' => $labels,
-        'values' => $costPerUnit,
-        'label' => 'ค่าไฟต่อหน่วย (บาท)'
-    ];
-}
-
-function getForecastReport($db, $year) {
-    // Simple linear regression forecast
-    // Get last 3 years data
-    $sql = "
-        SELECT 
-            MONTH(record_date) as month,
-            YEAR(record_date) as year,
-            AVG(ee_unit) as avg_ee
-        FROM electricity_summary
-        WHERE YEAR(record_date) BETWEEN ? AND ?
-        GROUP BY YEAR(record_date), MONTH(record_date)
-        ORDER BY year, month
-    ";
-    $stmt = $db->prepare($sql);
-    $stmt->execute([$year - 2, $year - 1]);
-    $historical = $stmt->fetchAll();
-    
-    // Group by month
-    $monthlyData = [];
-    foreach ($historical as $row) {
-        if (!isset($monthlyData[$row['month']])) {
-            $monthlyData[$row['month']] = [];
-        }
-        $monthlyData[$row['month']][] = $row['avg_ee'];
-    }
-    
-    // Calculate forecast for each month
-    $forecast = [];
-    for ($m = 1; $m <= 12; $m++) {
-        if (isset($monthlyData[$m]) && count($monthlyData[$m]) > 0) {
-            $values = $monthlyData[$m];
-            $avg = array_sum($values) / count($values);
-            $std = count($values) > 1 ? stats_standard_deviation($values) : $avg * 0.1;
-            
-            $forecast[] = [
-                'month' => $m,
-                'forecast' => $avg,
-                'lower_bound' => $avg - (1.96 * $std),
-                'upper_bound' => $avg + (1.96 * $std),
-                'confidence' => 95
-            ];
-        } else {
-            $forecast[] = [
-                'month' => $m,
-                'forecast' => 0,
-                'lower_bound' => 0,
-                'upper_bound' => 0,
-                'confidence' => 0
-            ];
-        }
-    }
-    
-    return $forecast;
-}
-
-function stats_standard_deviation($array) {
-    $n = count($array);
-    if ($n === 0) return 0;
-    $mean = array_sum($array) / $n;
-    $carry = 0.0;
-    foreach ($array as $val) {
-        $carry += pow($val - $mean, 2);
-    }
-    return sqrt($carry / ($n - 1));
-}
-
-function calculateForecastSummary($data) {
-    $totalForecast = 0;
-    foreach ($data as $row) {
-        $totalForecast += $row['forecast'];
-    }
-    
-    return [
-        'total_ee' => $totalForecast,
-        'total_cost' => 0,
-        'avg_daily' => $totalForecast / 365
-    ];
-}
-
-function calculateForecastStatistics($data) {
-    $forecastValues = array_column($data, 'forecast');
-    
-    return [
-        'total_ee' => array_sum($forecastValues),
-        'total_cost' => 0,
-        'avg_cost_per_unit' => 0,
-        'avg_daily_ee' => array_sum($forecastValues) / 365,
-        'max_monthly' => !empty($forecastValues) ? max($forecastValues) : 0,
-        'min_monthly' => !empty($forecastValues) ? min($forecastValues) : 0
-    ];
-}
-
-function analyzeForecastData($data) {
-    $forecastValues = array_column($data, 'forecast');
-    $lowerBounds = array_column($data, 'lower_bound');
-    $upperBounds = array_column($data, 'upper_bound');
-    
-    $totalRange = 0;
-    for ($i = 0; $i < count($data); $i++) {
-        $totalRange += $upperBounds[$i] - $lowerBounds[$i];
-    }
-    
-    return [
-        'total_forecast' => array_sum($forecastValues),
-        'avg_range' => count($data) > 0 ? $totalRange / count($data) : 0,
-        'peak_month' => array_search(max($forecastValues), $forecastValues) + 1,
-        'low_month' => array_search(min($forecastValues), $forecastValues) + 1,
-        'confidence_months' => count(array_filter(array_column($data, 'confidence'), function($c) { return $c > 0; }))
-    ];
-}
-
-function prepareForecastChartData($data) {
-    $labels = [];
-    $forecast = [];
-    $lower = [];
-    $upper = [];
-    
-    foreach ($data as $row) {
-        $labels[] = getThaiShortMonth($row['month']);
-        $forecast[] = $row['forecast'];
-        $lower[] = $row['lower_bound'];
-        $upper[] = $row['upper_bound'];
-    }
-    
-    return [
-        'labels' => $labels,
-        'datasets' => [
-            [
-                'label' => 'ค่าพยากรณ์',
-                'data' => $forecast,
-                'borderColor' => '#007bff',
-                'backgroundColor' => 'rgba(0, 123, 255, 0.1)',
-                'borderWidth' => 2,
-                'tension' => 0.4,
-                'fill' => false
-            ],
-            [
-                'label' => 'ช่วงความเชื่อมั่นบน',
-                'data' => $upper,
-                'borderColor' => 'rgba(40, 167, 69, 0.3)',
-                'borderWidth' => 1,
-                'borderDash' => [5, 5],
-                'fill' => '+1',
-                'backgroundColor' => 'rgba(40, 167, 69, 0.1)',
-                'pointRadius' => 0
-            ],
-            [
-                'label' => 'ช่วงความเชื่อมั่นล่าง',
-                'data' => $lower,
-                'borderColor' => 'rgba(40, 167, 69, 0.3)',
-                'borderWidth' => 1,
-                'borderDash' => [5, 5],
-                'fill' => false,
-                'pointRadius' => 0
-            ]
-        ]
-    ];
-}
-?>
 </script>
 
 <style>
@@ -1495,9 +2015,27 @@ function prepareForecastChartData($data) {
         border: 1px solid #dee2e6 !important;
     }
 }
-</style>
 
-<?php
-// Include footer
-require_once __DIR__ . '/../../includes/footer.php';
-?>
+.table th {
+    background-color: #f8f9fa;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.badge {
+    font-size: 85%;
+    padding: 0.4em 0.6em;
+}
+
+.small-box .inner h3 {
+    font-size: 2.2rem;
+}
+
+.small-box .inner p {
+    font-size: 1rem;
+}
+</style>

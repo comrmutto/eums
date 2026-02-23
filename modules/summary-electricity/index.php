@@ -51,11 +51,11 @@ $stmt = $db->prepare("
     SELECT 
         MONTH(record_date) as month,
         SUM(ee_unit) as total_ee,
-        SUM(water_unit) as total_water,
+        SUM(lpg_unit) as total_lpg,
         SUM(total_cost) as total_cost,
-        SUM(total_water_cost) as total_water_cost,
+        SUM(total_lpg_cost) as total_lpg_cost,
         AVG(cost_per_unit) as avg_cost_per_unit,
-        AVG(water_cost_per_unit) as avg_water_cost_per_unit
+        AVG(lpg_cost_per_unit) as avg_lpg_cost_per_unit
     FROM electricity_summary
     WHERE YEAR(record_date) = ?
     GROUP BY MONTH(record_date)
@@ -66,22 +66,22 @@ $yearlyData = $stmt->fetchAll();
 
 // Create array for all months
 $monthlyEE = array_fill(1, 12, 0);
-$monthlyWater = array_fill(1, 12, 0);
+$monthlyLPG = array_fill(1, 12, 0);
 $monthlyCost = array_fill(1, 12, 0);
-$monthlyWaterCost = array_fill(1, 12, 0);
+$monthlyLPGCost = array_fill(1, 12, 0);
 
 foreach ($yearlyData as $data) {
     $monthlyEE[$data['month']] = round($data['total_ee'], 2);
-    $monthlyWater[$data['month']] = round($data['total_water'], 2);
+    $monthlyLPG[$data['month']] = round($data['total_lpg'], 2);
     $monthlyCost[$data['month']] = round($data['total_cost'], 2);
-    $monthlyWaterCost[$data['month']] = round($data['total_water_cost'], 2);
+    $monthlyLPGCost[$data['month']] = round($data['total_lpg_cost'], 2);
 }
 
 // Calculate yearly totals
 $totalYearlyEE = array_sum($monthlyEE);
-$totalYearlyWater = array_sum($monthlyWater);
+$totalYearlyLPG = array_sum($monthlyLPG);
 $totalYearlyCost = array_sum($monthlyCost);
-$totalYearlyWaterCost = array_sum($monthlyWaterCost);
+$totalYearlyLPGCost = array_sum($monthlyLPGCost);
 ?>
 <style>
     /* ปรับสีหัวข้อให้เด่นชัดขึ้น */
@@ -254,9 +254,10 @@ $totalYearlyWaterCost = array_sum($monthlyWaterCost);
 
         <!-- Current Month Record Card -->
         <div class="card card-success card-outline">
-    <div class="card-header">
-        <h3 class="card-title" style="color: #28a745;"> <i class="fas fa-chart-bar"></i> บันทึกข้อมูลรายเดือน
-        </h3>
+            <div class="card-header">
+                <h3 class="card-title" style="color: #28a745;">
+                    <i class="fas fa-chart-bar"></i> บันทึกข้อมูลรายเดือน
+                </h3>
                 <div class="card-tools">
                     <?php if ($record): ?>
                         <button type="button" class="btn btn-warning btn-sm" onclick="editRecord(<?php echo $record['id']; ?>)">
@@ -277,21 +278,12 @@ $totalYearlyWaterCost = array_sum($monthlyWaterCost);
                 <div class="row">
                     <div class="col-md-6">
                         <div class="info-box bg-info">
-                        <span class="info-box-icon"><i class="fas fa-bolt"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">หน่วยไฟฟ้า (EE)</span>
+                            <span class="info-box-icon"><i class="fas fa-bolt"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">หน่วยไฟฟ้า (EE)</span>
                                 <span class="info-box-number"><?php echo number_format($record['ee_unit'], 2); ?> kWh</span>
                             </div>
                         </div>
-                        <div class="info-box bg-success">
-                            <span class="info-box-icon"><i class="fas fa-tint"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">หน่วยน้ำ (Water)</span>
-                                <span class="info-box-number"><?php echo number_format($record['water_unit'] ?? 0, 2); ?> m³</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
                         <div class="info-box bg-info">
                             <span class="info-box-icon"><i class="fas fa-coins"></i></span>
                             <div class="info-box-content">
@@ -300,12 +292,25 @@ $totalYearlyWaterCost = array_sum($monthlyWaterCost);
                                 <span class="info-box-text">ค่าไฟรวม: <?php echo number_format($record['total_cost'], 2); ?> บาท</span>
                             </div>
                         </div>
-                        <div class="info-box bg-danger">
-                            <span class="info-box-icon"><i class="fas fa-water"></i></span>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-box bg-orange">
+                            <span class="info-box-icon"><i class="fas fa-fire"></i></span>
                             <div class="info-box-content">
-                                <span class="info-box-text">ค่าน้ำต่อหน่วย</span>
-                                <span class="info-box-number"><?php echo number_format($record['water_cost_per_unit'] ?? 0, 4); ?> บาท</span>
-                                <span class="info-box-text">ค่าน้ำรวม: <?php echo number_format($record['total_water_cost'] ?? 0, 2); ?> บาท</span>
+                                <span class="info-box-text">ปริมาณ LPG</span>
+                                <span class="info-box-number">
+                                    <?php echo number_format($record['lpg_unit'] ?? 0, 2); ?> kg
+                                </span>
+                            </div>
+                        </div>
+                        <div class="info-box bg-danger">
+                            <span class="info-box-icon"><i class="fas fa-gas-pump"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">ราคา LPG ต่อหน่วย</span>
+                                <span class="info-box-number">
+                                    <?php echo number_format($record['lpg_cost_per_unit'] ?? 0, 4); ?> บาท
+                                </span>
+                                <span class="info-box-text">ราคารวม LPG: <?php echo number_format($record['total_lpg_cost'] ?? 0, 2); ?> บาท</span>
                             </div>
                         </div>
                     </div>
@@ -353,11 +358,11 @@ $totalYearlyWaterCost = array_sum($monthlyWaterCost);
             <div class="col-lg-3 col-6">
                 <div class="small-box bg-success">
                     <div class="inner">
-                        <h3><?php echo number_format($totalYearlyWater, 2); ?></h3>
-                        <p>หน่วยน้ำรวมปี <?php echo $currentYear + 543; ?> (m³)</p>
+                        <h3><?php echo number_format($totalYearlyLPG, 2); ?></h3>
+                        <p>หน่วย LPG รวมปี <?php echo $currentYear + 543; ?> (kg)</p>
                     </div>
                     <div class="icon">
-                        <i class="fas fa-tint"></i>
+                        <i class="fas fa-fire"></i>
                     </div>
                 </div>
             </div>
@@ -375,11 +380,11 @@ $totalYearlyWaterCost = array_sum($monthlyWaterCost);
             <div class="col-lg-3 col-6">
                 <div class="small-box bg-danger">
                     <div class="inner">
-                        <h3><?php echo number_format($totalYearlyWaterCost, 2); ?></h3>
-                        <p>ค่าน้ำรวมปี (บาท)</p>
+                        <h3><?php echo number_format($totalYearlyLPGCost, 2); ?></h3>
+                        <p>ค่า LPG รวมปี (บาท)</p>
                     </div>
                     <div class="icon">
-                        <i class="fas fa-water"></i>
+                        <i class="fas fa-fire"></i>
                     </div>
                 </div>
             </div>
@@ -392,7 +397,7 @@ $totalYearlyWaterCost = array_sum($monthlyWaterCost);
                     <div class="card-header">
                         <h3 class="card-title">
                             <i class="fas fa-chart-bar"></i>
-                            หน่วยไฟฟ้าและน้ำรายเดือน ปี <?php echo $currentYear + 543; ?>
+                            หน่วยไฟฟ้าและ LPG รายเดือน ปี <?php echo $currentYear + 543; ?>
                         </h3>
                     </div>
                     <div class="card-body">
@@ -407,7 +412,7 @@ $totalYearlyWaterCost = array_sum($monthlyWaterCost);
                     <div class="card-header">
                         <h3 class="card-title">
                             <i class="fas fa-chart-line"></i>
-                            ค่าไฟฟ้าและค่าน้ำรายเดือน ปี <?php echo $currentYear + 543; ?>
+                            ค่าไฟฟ้าและค่า LPG รายเดือน ปี <?php echo $currentYear + 543; ?>
                         </h3>
                     </div>
                     <div class="card-body">
@@ -439,11 +444,11 @@ $totalYearlyWaterCost = array_sum($monthlyWaterCost);
                             <tr>
                                 <th>เดือน</th>
                                 <th>หน่วยไฟฟ้า (kWh)</th>
-                                <th>หน่วยน้ำ (m³)</th>
+                                <th>หน่วย LPG (kg)</th>
                                 <th>ค่าไฟ/หน่วย</th>
-                                <th>ค่าน้ำ/หน่วย</th>
+                                <th>ค่า LPG/หน่วย</th>
                                 <th>ค่าไฟฟ้า</th>
-                                <th>ค่าน้ำ</th>
+                                <th>ค่า LPG</th>
                                 <th>รวม</th>
                                 <th>PE</th>
                                 <th>จัดการ</th>
@@ -473,15 +478,15 @@ $totalYearlyWaterCost = array_sum($monthlyWaterCost);
                             <tr>
                                 <td><?php echo $months[$m-1]; ?></td>
                                 <td class="text-right"><?php echo $rec ? number_format($rec['ee_unit'], 2) : '-'; ?></td>
-                                <td class="text-right"><?php echo $rec && isset($rec['water_unit']) ? number_format($rec['water_unit'], 2) : '-'; ?></td>
+                                <td class="text-right"><?php echo $rec && isset($rec['lpg_unit']) ? number_format($rec['lpg_unit'], 2) : '-'; ?></td>
                                 <td class="text-right"><?php echo $rec ? number_format($rec['cost_per_unit'], 4) : '-'; ?></td>
-                                <td class="text-right"><?php echo $rec && isset($rec['water_cost_per_unit']) ? number_format($rec['water_cost_per_unit'], 4) : '-'; ?></td>
+                                <td class="text-right"><?php echo $rec && isset($rec['lpg_cost_per_unit']) ? number_format($rec['lpg_cost_per_unit'], 4) : '-'; ?></td>
                                 <td class="text-right"><?php echo $rec ? number_format($rec['total_cost'], 2) : '-'; ?></td>
-                                <td class="text-right"><?php echo $rec && isset($rec['total_water_cost']) ? number_format($rec['total_water_cost'], 2) : '-'; ?></td>
+                                <td class="text-right"><?php echo $rec && isset($rec['total_lpg_cost']) ? number_format($rec['total_lpg_cost'], 2) : '-'; ?></td>
                                 <td class="text-right">
                                     <?php 
                                     if ($rec) {
-                                        $total = $rec['total_cost'] + ($rec['total_water_cost'] ?? 0);
+                                        $total = $rec['total_cost'] + ($rec['total_lpg_cost'] ?? 0);
                                         echo number_format($total, 2);
                                     } else {
                                         echo '-';
@@ -510,12 +515,12 @@ $totalYearlyWaterCost = array_sum($monthlyWaterCost);
                             <tr class="bg-gray">
                                 <th class="text-right">รวม</th>
                                 <th class="text-right"><?php echo number_format($totalYearlyEE, 2); ?></th>
-                                <th class="text-right"><?php echo number_format($totalYearlyWater, 2); ?></th>
+                                <th class="text-right"><?php echo number_format($totalYearlyLPG, 2); ?></th>
                                 <th class="text-right">-</th>
                                 <th class="text-right">-</th>
                                 <th class="text-right"><?php echo number_format($totalYearlyCost, 2); ?></th>
-                                <th class="text-right"><?php echo number_format($totalYearlyWaterCost, 2); ?></th>
-                                <th class="text-right"><?php echo number_format($totalYearlyCost + $totalYearlyWaterCost, 2); ?></th>
+                                <th class="text-right"><?php echo number_format($totalYearlyLPGCost, 2); ?></th>
+                                <th class="text-right"><?php echo number_format($totalYearlyCost + $totalYearlyLPGCost, 2); ?></th>
                                 <th colspan="2"></th>
                             </tr>
                         </tfoot>
@@ -599,28 +604,28 @@ $totalYearlyWaterCost = array_sum($monthlyWaterCost);
                     
                     <div class="card card-success mt-3">
                         <div class="card-header">
-                            <h5 class="card-title">ข้อมูลน้ำ</h5>
+                            <h5 class="card-title">ข้อมูล LPG</h5>
                         </div>
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <label>หน่วยน้ำ (m³)</label>
-                                        <input type="number" step="0.01" class="form-control" name="water_unit" id="waterUnit" value="0">
+                                        <label>หน่วย LPG (kg)</label>
+                                        <input type="number" step="0.01" class="form-control" name="lpg_unit" id="lpgUnit" value="0">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <label>ค่าน้ำต่อหน่วย (บาท)</label>
-                                        <input type="number" step="0.0001" class="form-control" name="water_cost_per_unit" id="waterCostPerUnit" value="0">
+                                        <label>ค่า LPG ต่อหน่วย (บาท)</label>
+                                        <input type="number" step="0.0001" class="form-control" name="lpg_cost_per_unit" id="lpgCostPerUnit" value="0">
                                     </div>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <label>ค่าน้ำ (บาท)</label>
-                                        <input type="text" class="form-control" id="totalWaterCost" readonly>
+                                        <label>ค่า LPG (บาท)</label>
+                                        <input type="text" class="form-control" id="totalLPGCost" readonly>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -683,7 +688,7 @@ $(document).ready(function() {
     renderCharts();
     
     // Calculate costs
-    $('#eeUnit, #costPerUnit, #waterUnit, #waterCostPerUnit').on('input', function() {
+    $('#eeUnit, #costPerUnit, #lpgUnit, #lpgCostPerUnit').on('input', function() {
         calculateCosts();
     });
     
@@ -709,9 +714,9 @@ function renderCharts() {
                         'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
     
     const eeData = [<?php echo implode(',', $monthlyEE); ?>];
-    const waterData = [<?php echo implode(',', $monthlyWater); ?>];
+    const lpgData = [<?php echo implode(',', $monthlyLPG); ?>];
     const costData = [<?php echo implode(',', $monthlyCost); ?>];
-    const waterCostData = [<?php echo implode(',', $monthlyWaterCost); ?>];
+    const lpgCostData = [<?php echo implode(',', $monthlyLPGCost); ?>];
     
     // Usage Chart
     const usageCtx = document.getElementById('usageChart').getContext('2d');
@@ -731,10 +736,10 @@ function renderCharts() {
                     yAxisID: 'y'
                 },
                 {
-                    label: 'หน่วยน้ำ (m³)',
-                    data: waterData,
-                    backgroundColor: 'rgba(40, 167, 69, 0.5)',
-                    borderColor: '#28a745',
+                    label: 'หน่วย LPG (kg)',
+                    data: lpgData,
+                    backgroundColor: 'rgba(255, 193, 7, 0.5)',
+                    borderColor: '#ffc107',
                     borderWidth: 1,
                     yAxisID: 'y1'
                 }
@@ -771,7 +776,7 @@ function renderCharts() {
                     position: 'right',
                     title: {
                         display: true,
-                        text: 'm³'
+                        text: 'kg'
                     },
                     grid: {
                         drawOnChartArea: false
@@ -801,8 +806,8 @@ function renderCharts() {
                     yAxisID: 'y'
                 },
                 {
-                    label: 'ค่าน้ำ (บาท)',
-                    data: waterCostData,
+                    label: 'ค่า LPG (บาท)',
+                    data: lpgCostData,
                     borderColor: '#17a2b8',
                     backgroundColor: 'rgba(23, 162, 184, 0.1)',
                     borderWidth: 2,
@@ -843,7 +848,7 @@ function renderCharts() {
                     position: 'right',
                     title: {
                         display: true,
-                        text: 'ค่าน้ำ (บาท)'
+                        text: 'ค่า LPG (บาท)'
                     },
                     grid: {
                         drawOnChartArea: false
@@ -857,15 +862,15 @@ function renderCharts() {
 function calculateCosts() {
     const ee = parseFloat($('#eeUnit').val()) || 0;
     const costPerUnit = parseFloat($('#costPerUnit').val()) || 0;
-    const water = parseFloat($('#waterUnit').val()) || 0;
-    const waterCostPerUnit = parseFloat($('#waterCostPerUnit').val()) || 0;
+    const lpg = parseFloat($('#lpgUnit').val()) || 0;
+    const lpgCostPerUnit = parseFloat($('#lpgCostPerUnit').val()) || 0;
     
     const totalCost = (ee * costPerUnit).toFixed(2);
-    const totalWaterCost = (water * waterCostPerUnit).toFixed(2);
-    const totalAll = (parseFloat(totalCost) + parseFloat(totalWaterCost)).toFixed(2);
+    const totalLPGCost = (lpg * lpgCostPerUnit).toFixed(2);
+    const totalAll = (parseFloat(totalCost) + parseFloat(totalLPGCost)).toFixed(2);
     
     $('#totalCost').val(totalCost);
-    $('#totalWaterCost').val(totalWaterCost);
+    $('#totalLPGCost').val(totalLPGCost);
     $('#totalAllCost').val(totalAll);
 }
 
@@ -899,7 +904,7 @@ function showAddModal(month = null) {
     $('#recordForm')[0].reset();
     $('#recordId').val('');
     $('#totalCost').val('');
-    $('#totalWaterCost').val('');
+    $('#totalLPGCost').val('');
     $('#totalAllCost').val('');
     $('#duplicateAlert').hide();
     
@@ -927,11 +932,11 @@ function editRecord(id) {
                 $('#eeUnit').val(response.data.ee_unit);
                 $('#costPerUnit').val(response.data.cost_per_unit);
                 
-                if (response.data.water_unit) {
-                    $('#waterUnit').val(response.data.water_unit);
+                if (response.data.lpg_unit) {
+                    $('#lpgUnit').val(response.data.lpg_unit);
                 }
-                if (response.data.water_cost_per_unit) {
-                    $('#waterCostPerUnit').val(response.data.water_cost_per_unit);
+                if (response.data.lpg_cost_per_unit) {
+                    $('#lpgCostPerUnit').val(response.data.lpg_cost_per_unit);
                 }
                 
                 $('#pe').val(response.data.pe);
@@ -955,7 +960,7 @@ function saveRecord() {
     // Create date from month and year (first day of month)
     const month = $('#monthSelect').val();
     const year = $('#yearSelect').val();
-    const recordDate = year + '-' + month.padStart(2, '0') + '-01';
+    const recordDate = year + '-' + String(month).padStart(2, '0') + '-01';
     
     const formData = $('#recordForm').serialize() + '&record_date=' + recordDate;
     

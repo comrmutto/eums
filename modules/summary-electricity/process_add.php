@@ -35,9 +35,9 @@ try {
     $doc_id = isset($_POST['doc_id']) ? (int)$_POST['doc_id'] : 0;
     $record_date = isset($_POST['record_date']) ? $_POST['record_date'] : '';
     $ee_unit = isset($_POST['ee_unit']) ? (float)$_POST['ee_unit'] : 0;
-    $water_unit = isset($_POST['water_unit']) ? (float)$_POST['water_unit'] : 0;
+    $lpg_unit = isset($_POST['lpg_unit']) ? (float)$_POST['lpg_unit'] : 0;
     $cost_per_unit = isset($_POST['cost_per_unit']) ? (float)$_POST['cost_per_unit'] : 0;
-    $water_cost_per_unit = isset($_POST['water_cost_per_unit']) ? (float)$_POST['water_cost_per_unit'] : 0;
+    $lpg_cost_per_unit = isset($_POST['lpg_cost_per_unit']) ? (float)$_POST['lpg_cost_per_unit'] : 0;
     $pe = isset($_POST['pe']) && $_POST['pe'] !== '' ? (float)$_POST['pe'] : null;
     $remarks = isset($_POST['remarks']) ? trim($_POST['remarks']) : '';
     
@@ -54,13 +54,13 @@ try {
         throw new Exception('กรุณากรอกค่าไฟต่อหน่วย (ต้องมากกว่า 0)');
     }
     
-    // Validate water values (can be zero)
-    if ($water_unit < 0) {
-        throw new Exception('หน่วยน้ำต้องมากกว่าหรือเท่ากับ 0');
+    // Validate LPG values (can be zero)
+    if ($lpg_unit < 0) {
+        throw new Exception('หน่วย LPG ต้องมากกว่าหรือเท่ากับ 0');
     }
     
-    if ($water_cost_per_unit < 0) {
-        throw new Exception('ค่าน้ำต่อหน่วยต้องมากกว่าหรือเท่ากับ 0');
+    if ($lpg_cost_per_unit < 0) {
+        throw new Exception('ค่า LPG ต่อหน่วยต้องมากกว่าหรือเท่ากับ 0');
     }
     
     // Validate date format
@@ -125,7 +125,6 @@ try {
     $existingRecord = $stmt->fetch();
     
     if ($existingRecord && !$id) {
-        // Ask for confirmation to overwrite
         echo json_encode([
             'success' => false,
             'duplicate' => true,
@@ -143,15 +142,15 @@ try {
     }
     
     if ($id) {
-        // Update existing record
+        // Update existing record - ไม่ต้องส่ง total_cost และ total_lpg_cost
         $stmt = $db->prepare("
             UPDATE electricity_summary 
             SET doc_id = ?,
                 record_date = ?,
                 ee_unit = ?,
-                water_unit = ?,
+                lpg_unit = ?,
                 cost_per_unit = ?,
-                water_cost_per_unit = ?,
+                lpg_cost_per_unit = ?,
                 pe = ?,
                 remarks = ?,
                 updated_at = NOW()
@@ -162,26 +161,27 @@ try {
             $doc_id,
             $record_date,
             $ee_unit,
-            $water_unit,
+            $lpg_unit,
             $cost_per_unit,
-            $water_cost_per_unit,
+            $lpg_cost_per_unit,
             $pe,
             $remarks,
             $id
         ]);
         
         if (!$result) {
-            throw new Exception('ไม่สามารถอัปเดตข้อมูลได้');
+            $errorInfo = $stmt->errorInfo();
+            throw new Exception('ไม่สามารถอัปเดตข้อมูลได้: ' . ($errorInfo[2] ?? 'Unknown error'));
         }
         
         logActivity($_SESSION['user_id'], 'edit_summary_record', 
                    "Edited summary record ID: $id, Month: $record_date");
         
     } else {
-        // Insert new record
+        // Insert new record - ไม่ต้องส่ง total_cost และ total_lpg_cost
         $stmt = $db->prepare("
             INSERT INTO electricity_summary 
-            (doc_id, record_date, ee_unit, water_unit, cost_per_unit, water_cost_per_unit, pe, remarks, recorded_by, created_at)
+            (doc_id, record_date, ee_unit, lpg_unit, cost_per_unit, lpg_cost_per_unit, pe, remarks, recorded_by, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
         ");
         
@@ -189,16 +189,17 @@ try {
             $doc_id,
             $record_date,
             $ee_unit,
-            $water_unit,
+            $lpg_unit,
             $cost_per_unit,
-            $water_cost_per_unit,
+            $lpg_cost_per_unit,
             $pe,
             $remarks,
             $_SESSION['username']
         ]);
         
         if (!$result) {
-            throw new Exception('ไม่สามารถบันทึกข้อมูลได้');
+            $errorInfo = $stmt->errorInfo();
+            throw new Exception('ไม่สามารถบันทึกข้อมูลได้: ' . ($errorInfo[2] ?? 'Unknown error'));
         }
         
         $id = $db->lastInsertId();
@@ -210,7 +211,7 @@ try {
     // Commit transaction
     $db->commit();
     
-    // Get the saved record to return total_cost
+    // Get the saved record to return (total_cost จะถูกคำนวณโดยฐานข้อมูล)
     $stmt = $db->prepare("SELECT * FROM electricity_summary WHERE id = ?");
     $stmt->execute([$id]);
     $newRecord = $stmt->fetch();

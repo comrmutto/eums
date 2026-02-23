@@ -24,13 +24,8 @@ if (!isset($_SESSION['user_id'])) {
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
-// Set header for JSON response if AJAX request
-$isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
-          strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
-
-if ($isAjax) {
-    header('Content-Type: application/json');
-}
+// Set header for JSON response
+header('Content-Type: application/json');
 
 try {
     $db = getDB();
@@ -39,7 +34,9 @@ try {
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     $record_date = isset($_POST['record_date']) ? $_POST['record_date'] : '';
     $ee_unit = isset($_POST['ee_unit']) ? (float)$_POST['ee_unit'] : 0;
+    $lpg_unit = isset($_POST['lpg_unit']) ? (float)$_POST['lpg_unit'] : 0;
     $cost_per_unit = isset($_POST['cost_per_unit']) ? (float)$_POST['cost_per_unit'] : 0;
+    $lpg_cost_per_unit = isset($_POST['lpg_cost_per_unit']) ? (float)$_POST['lpg_cost_per_unit'] : 0;
     $pe = isset($_POST['pe']) && $_POST['pe'] !== '' ? (float)$_POST['pe'] : null;
     $remarks = isset($_POST['remarks']) ? trim($_POST['remarks']) : '';
     
@@ -60,19 +57,29 @@ try {
         throw new Exception('กรุณากรอกค่าไฟต่อหน่วย (ต้องมากกว่า 0)');
     }
     
-    // Convert date from Thai format
-    $dateObj = DateTime::createFromFormat('d/m/Y', $record_date);
-    if (!$dateObj) {
-        $dateObj = DateTime::createFromFormat('Y-m-d', $record_date);
-        if (!$dateObj) {
-            throw new Exception('รูปแบบวันที่ไม่ถูกต้อง (ต้องเป็น DD/MM/YYYY)');
-        }
+    if ($lpg_unit < 0) {
+        throw new Exception('หน่วย LPG ต้องมากกว่าหรือเท่ากับ 0');
     }
-    $record_date_db = $dateObj->format('Y-m-d');
+    
+    if ($lpg_cost_per_unit < 0) {
+        throw new Exception('ค่า LPG ต่อหน่วยต้องมากกว่าหรือเท่ากับ 0');
+    }
+    
+    // Validate date format
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $record_date)) {
+        throw new Exception('รูปแบบวันที่ไม่ถูกต้อง');
+    }
+    
+    // Check if date is first day of month
+    $dateObj = new DateTime($record_date);
+    if ($dateObj->format('d') != '01') {
+        throw new Exception('วันที่ต้องเป็นวันแรกของเดือน (วันที่ 1)');
+    }
     
     // Check if date is in future
-    if ($record_date_db > date('Y-m-d')) {
-        throw new Exception('ไม่สามารถบันทึกข้อมูลในอนาคตได้');
+    $firstDayOfCurrentMonth = date('Y-m-01');
+    if ($record_date > $firstDayOfCurrentMonth) {
+        throw new Exception('ไม่สามารถบันทึกข้อมูลเดือนในอนาคตได้');
     }
     
     // Begin transaction
@@ -88,15 +95,15 @@ try {
     }
     
     // Check for duplicate if date changed
-    if ($existingRecord['record_date'] != $record_date_db) {
+    if ($existingRecord['record_date'] != $record_date) {
         $stmt = $db->prepare("
             SELECT id FROM electricity_summary 
             WHERE record_date = ? AND id != ?
         ");
-        $stmt->execute([$record_date_db, $id]);
+        $stmt->execute([$record_date, $id]);
         
         if ($stmt->fetch()) {
-            throw new Exception('มีบันทึกข้อมูลสำหรับวันนี้อยู่แล้ว');
+            throw new Exception('มีบันทึกข้อมูลสำหรับเดือนนี้อยู่แล้ว');
         }
     }
     
@@ -107,12 +114,14 @@ try {
         }
     }
     
-    // Update record - ไม่ต้องอัปเดต total_cost เพราะเป็น GENERATED COLUMN
+    // Update record - ไม่ต้องส่ง total_cost และ total_lpg_cost
     $stmt = $db->prepare("
         UPDATE electricity_summary 
         SET record_date = ?,
             ee_unit = ?,
+            lpg_unit = ?,
             cost_per_unit = ?,
+            lpg_cost_per_unit = ?,
             pe = ?,
             remarks = ?,
             updated_at = NOW()
@@ -120,9 +129,11 @@ try {
     ");
     
     $result = $stmt->execute([
-        $record_date_db,
+        $record_date,
         $ee_unit,
+        $lpg_unit,
         $cost_per_unit,
+        $lpg_cost_per_unit,
         $pe,
         $remarks,
         $id
@@ -133,53 +144,42 @@ try {
         throw new Exception('ไม่สามารถอัปเดตข้อมูลได้: ' . ($errorInfo[2] ?? 'Unknown error'));
     }
     
-    // ดึงข้อมูลที่อัปเดต
-    $stmt = $db->prepare("SELECT * FROM electricity_summary WHERE id = ?");
-    $stmt->execute([$id]);
-    $updatedRecord = $stmt->fetch();
-    
     // Commit transaction
     $db->commit();
     
     // Log activity
     logActivity($_SESSION['user_id'], 'edit_summary_record', 
-               "Edited summary record ID: $id, Date: $record_date_db, EE: $ee_unit");
+               "Edited summary record ID: $id, Month: $record_date");
     
-    // Prepare response
-    $response = [
+    // Get updated record (total_cost จะถูกคำนวณโดยฐานข้อมูล)
+    $stmt = $db->prepare("SELECT * FROM electricity_summary WHERE id = ?");
+    $stmt->execute([$id]);
+    $updatedRecord = $stmt->fetch();
+    
+    echo json_encode([
         'success' => true,
         'message' => 'อัปเดตข้อมูลเรียบร้อย',
-        'data' => [
-            'id' => $id,
-            'record_date' => $record_date_db,
-            'ee_unit' => $ee_unit,
-            'total_cost' => $updatedRecord['total_cost']
-        ]
-    ];
+        'data' => $updatedRecord
+    ]);
     
-    if ($isAjax) {
-        echo json_encode($response, JSON_UNESCAPED_UNICODE);
-    } else {
-        $_SESSION['success'] = $response['message'];
-        header('Location: view.php?id=' . $id);
-    }
-    
-} catch (Exception $e) {
-    // Rollback transaction if active
+} catch (PDOException $e) {
     if (isset($db) && $db->inTransaction()) {
         $db->rollBack();
     }
+    error_log("Database error in summary process_edit.php: " . $e->getMessage());
+    echo json_encode([
+        'success' => false,
+        'message' => 'เกิดข้อผิดพลาดในฐานข้อมูล: ' . $e->getMessage()
+    ]);
     
-    error_log("Error in summary process_edit.php: " . $e->getMessage());
-    
-    if ($isAjax) {
-        echo json_encode([
-            'success' => false,
-            'message' => $e->getMessage()
-        ], JSON_UNESCAPED_UNICODE);
-    } else {
-        $_SESSION['error'] = $e->getMessage();
-        header('Location: edit.php?id=' . $id);
+} catch (Exception $e) {
+    if (isset($db) && $db->inTransaction()) {
+        $db->rollBack();
     }
+    error_log("Error in summary process_edit.php: " . $e->getMessage());
+    echo json_encode([
+        'success' => false,
+        'message' => $e->getMessage()
+    ]);
 }
 ?>
