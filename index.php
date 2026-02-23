@@ -295,7 +295,7 @@ $recentDocuments = $stmt->fetchAll();
                     <div class="info-box-content">
                         <span class="info-box-text">วันนี้</span>
                         <span class="info-box-number">
-                            <?php echo date('d/m/' . ($currentYear + 543)); ?>
+                            <?php echo date('d/m/' . ($currentYear)); ?>
                         </span>
                         <span class="info-box-text"><?php echo getThaiDay(date('l')); ?></span>
                     </div>
@@ -353,7 +353,7 @@ $recentDocuments = $stmt->fetchAll();
         <!-- Module Cards -->
         <div class="row">
             <?php foreach ($moduleStats as $key => $stat): ?>
-            <div class="col-lg-4 col-6">
+            <div class="col-lg-2 col-6">
                 <div class="small-box bg-<?php echo $stat['color']; ?>">
                     <div class="inner">
                         <h3><?php echo $stat['today_count']; ?><sup style="font-size: 20px"> วันนี้</sup></h3>
@@ -386,10 +386,10 @@ $recentDocuments = $stmt->fetchAll();
                             สรุปการใช้งานรายเดือน
                         </h3>
                         <div class="card-tools">
-                            <select id="yearSelect" class="form-control form-control-sm">
+                            <select id="yearSelect" class="form-control form-control-sm" style="height: 40px;">
                                 <?php for ($y = $currentYear - 2; $y <= $currentYear; $y++): ?>
                                 <option value="<?php echo $y; ?>" <?php echo $y == $currentYear ? 'selected' : ''; ?>>
-                                    ปี <?php echo $y + 543; ?>
+                                    ปี <?php echo $y; ?>
                                 </option>
                                 <?php endfor; ?>
                             </select>
@@ -413,56 +413,8 @@ $recentDocuments = $stmt->fetchAll();
                     </div>
                     <div class="card-body">
                         <div class="chart-container">
-                            <canvas id="pieChart" style="min-height: 250px;"></canvas>
+                            <canvas id="pieChart" style="min-height: 180px;"></canvas>
                         </div>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <i class="fas fa-bell"></i>
-                            การแจ้งเตือนล่าสุด
-                        </h3>
-                    </div>
-                    <div class="card-body p-0">
-                        <ul class="list-group list-group-flush">
-                            <?php if (empty($alerts)): ?>
-                            <li class="list-group-item text-center text-muted">
-                                <i class="fas fa-check-circle text-success"></i> ไม่มีการแจ้งเตือน
-                            </li>
-                            <?php else: ?>
-                                <?php foreach (array_slice($alerts, 0, 5) as $alert): ?>
-                                <li class="list-group-item">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <h6 class="mb-1">
-                                            <span class="badge badge-<?php 
-                                                echo $alert['module'] == 'air' ? 'info' : 
-                                                    ($alert['module'] == 'lpg' ? 'warning' : 'danger'); 
-                                            ?>">
-                                                <?php 
-                                                echo $alert['module'] == 'air' ? 'Air' : 
-                                                    ($alert['module'] == 'lpg' ? 'LPG' : 'Boiler'); 
-                                                ?>
-                                            </span>
-                                        </h6>
-                                        <small><?php echo date('d/m', strtotime($alert['record_date'])); ?></small>
-                                    </div>
-                                    <p class="mb-1">
-                                        <?php echo $alert['machine_name'] ?? 'LPG'; ?> - 
-                                        <?php echo $alert['inspection_item'] ?? ''; ?>
-                                    </p>
-                                    <small class="text-danger">
-                                        ค่า: <?php echo is_numeric($alert['actual_value']) ? number_format($alert['actual_value'], 2) : $alert['actual_value']; ?> 
-                                        (มาตรฐาน: <?php echo $alert['standard_value']; ?>)
-                                    </small>
-                                </li>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </ul>
-                    </div>
-                    <div class="card-footer text-center">
-                        <a href="#">ดูทั้งหมด</a>
                     </div>
                 </div>
             </div>

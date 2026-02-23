@@ -56,7 +56,7 @@ $userRole = $_SESSION['user_role'] ?? 'viewer';
     <!-- DatePicker CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
-    
+
     <!-- Select2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css">
@@ -66,7 +66,7 @@ $userRole = $_SESSION['user_role'] ?? 'viewer';
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/eums/assets/css/styles.css">
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.39.0/css/tempusdominus-bootstrap-4.min.css" />
     <!-- Module specific CSS -->
     <?php if (isset($module_css)): ?>
         <?php foreach ($module_css as $css): ?>
@@ -91,6 +91,22 @@ $userRole = $_SESSION['user_role'] ?? 'viewer';
         }
         .user-menu .dropdown-toggle::after {
             color: white;
+        }
+        /* แก้ปัญหา Datetimepicker (BS4) แสดงผลไม่เต็มกรอบใน Bootstrap 5 */
+        .bootstrap-datetimepicker-widget.dropdown-menu {
+            width: auto !important;
+            min-width: 330px !important; /* บังคับให้ความกว้างขั้นต่ำครอบคลุมวันทั้ง 7 วันพอดี */
+            padding: 10px !important;
+        }
+
+        .bootstrap-datetimepicker-widget.dropdown-menu table {
+            width: 100% !important;
+            margin: 0 !important;
+        }
+
+        .bootstrap-datetimepicker-widget.dropdown-menu table td,
+        .bootstrap-datetimepicker-widget.dropdown-menu table th {
+            border-radius: 0;
         }
     </style>
 </head>
