@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Feb 19, 2026 at 10:25 AM
+-- Generation Time: Feb 23, 2026 at 10:03 AM
 -- Server version: 8.4.3
 -- PHP Version: 8.3.28
 
@@ -51,11 +51,20 @@ CREATE TABLE `air_daily_records` (
   `machine_id` int DEFAULT NULL,
   `record_date` date DEFAULT NULL,
   `inspection_item_id` int DEFAULT NULL,
+  `before_value` decimal(12,2) DEFAULT NULL COMMENT 'ค่าก่อนการใช้งาน',
+  `after_value` decimal(12,2) DEFAULT NULL COMMENT 'ค่าหลังการใช้งาน',
   `actual_value` decimal(10,2) DEFAULT NULL,
   `remarks` text,
   `recorded_by` varchar(100) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `air_daily_records`
+--
+
+INSERT INTO `air_daily_records` (`id`, `doc_id`, `machine_id`, `record_date`, `inspection_item_id`, `before_value`, `after_value`, `actual_value`, `remarks`, `recorded_by`, `created_at`) VALUES
+(3, 1, 1, '2026-02-23', 1, 2400.00, 2420.00, 20.00, '', 'admin', '2026-02-23 03:23:55');
 
 -- --------------------------------------------------------
 
@@ -71,8 +80,19 @@ CREATE TABLE `air_inspection_standards` (
   `unit` varchar(20) DEFAULT NULL,
   `min_value` decimal(10,2) DEFAULT NULL,
   `max_value` decimal(10,2) DEFAULT NULL,
-  `sort_order` int DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `sort_order` int DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `air_inspection_standards`
+--
+
+INSERT INTO `air_inspection_standards` (`id`, `machine_id`, `inspection_item`, `standard_value`, `unit`, `min_value`, `max_value`, `sort_order`, `created_at`) VALUES
+(1, 1, 'Operate time', 12.00, 'Hrs', 0.00, 24.00, 1, '2026-02-21 17:26:04'),
+(2, 2, 'Operate time', 12.00, 'Hrs', 0.00, 24.00, 1, '2026-02-21 17:26:29'),
+(3, 3, 'Operate time', 12.00, 'Hrs', 0.00, 24.00, 1, '2026-02-21 17:26:47'),
+(4, 4, 'Operate time', 12.00, 'Hrs', 0.00, 24.00, 1, '2026-02-21 17:27:10');
 
 -- --------------------------------------------------------
 
@@ -93,7 +113,16 @@ CREATE TABLE `boiler_daily_records` (
   `remarks` text,
   `recorded_by` varchar(100) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `boiler_daily_records`
+--
+
+INSERT INTO `boiler_daily_records` (`id`, `doc_id`, `machine_id`, `record_date`, `steam_pressure`, `steam_temperature`, `feed_water_level`, `fuel_consumption`, `operating_hours`, `remarks`, `recorded_by`, `created_at`) VALUES
+(1, 13, 1, '2026-02-23', 10.00, 40.00, 1.00, 20.00, 21.00, '', 'admin', '2026-02-23 07:21:30'),
+(2, 13, 2, '2026-02-23', 11.00, 29.00, 0.90, 34.00, 15.00, '', 'admin', '2026-02-23 07:22:51'),
+(3, 13, 3, '2026-02-23', 18.00, 35.00, 0.70, 31.00, 23.00, '', 'admin', '2026-02-23 07:25:51');
 
 -- --------------------------------------------------------
 
@@ -111,7 +140,18 @@ CREATE TABLE `documents` (
   `details` text,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `documents`
+--
+
+INSERT INTO `documents` (`id`, `doc_no`, `doc_name`, `module_type`, `start_date`, `rev_no`, `details`, `created_at`, `updated_at`) VALUES
+(1, 'AC-2569-02', NULL, 'air', '2026-02-01', '00', NULL, '2026-02-21 17:38:44', '2026-02-21 17:38:44'),
+(11, 'EW-2569-02', NULL, 'energy_water', '2026-02-01', '00', NULL, '2026-02-22 04:46:01', '2026-02-22 04:46:01'),
+(12, 'LPG-2569-02', NULL, 'lpg', '2026-02-01', '00', NULL, '2026-02-23 01:35:02', '2026-02-23 01:35:02'),
+(13, 'BLR-2569-02', NULL, 'boiler', '2026-02-01', '00', NULL, '2026-02-23 07:21:30', '2026-02-23 07:21:30'),
+(23, 'SUM-2569-02', NULL, 'summary', '2026-02-01', '00', NULL, '2026-02-23 08:24:12', '2026-02-23 08:24:12');
 
 -- --------------------------------------------------------
 
@@ -123,14 +163,28 @@ CREATE TABLE `electricity_summary` (
   `id` int NOT NULL,
   `doc_id` int DEFAULT NULL,
   `record_date` date DEFAULT NULL,
+  `month` int DEFAULT NULL,
+  `year` int DEFAULT NULL,
   `ee_unit` decimal(10,2) DEFAULT NULL,
+  `lpg_unit` decimal(15,2) DEFAULT '0.00',
   `cost_per_unit` decimal(10,2) DEFAULT NULL,
   `total_cost` decimal(10,2) GENERATED ALWAYS AS ((`ee_unit` * `cost_per_unit`)) STORED,
+  `lpg_cost_per_unit` decimal(15,4) DEFAULT '0.0000',
+  `total_lpg_cost` decimal(10,2) GENERATED ALWAYS AS ((`lpg_unit` * `lpg_cost_per_unit`)) STORED,
   `pe` decimal(10,2) DEFAULT NULL,
   `remarks` text,
   `recorded_by` varchar(100) DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `electricity_summary`
+--
+
+INSERT INTO `electricity_summary` (`id`, `doc_id`, `record_date`, `month`, `year`, `ee_unit`, `lpg_unit`, `cost_per_unit`, `lpg_cost_per_unit`, `pe`, `remarks`, `recorded_by`, `created_at`, `updated_at`) VALUES
+(2, 23, '2026-01-01', NULL, NULL, 13000.00, 12546.00, 3.60, 20.0000, 0.98, '', 'admin', '2026-02-23 08:26:28', '2026-02-23 08:26:28'),
+(6, 23, '2026-02-01', NULL, NULL, 15466.00, 15465.00, 3.60, 12.0000, 0.98, '', 'admin', '2026-02-23 09:15:27', '2026-02-23 09:15:27');
 
 -- --------------------------------------------------------
 
@@ -143,7 +197,14 @@ CREATE TABLE `login_attempts` (
   `username` varchar(50) NOT NULL,
   `ip_address` varchar(45) DEFAULT NULL,
   `attempt_time` datetime NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `login_attempts`
+--
+
+INSERT INTO `login_attempts` (`id`, `username`, `ip_address`, `attempt_time`) VALUES
+(1, 'admin', '127.0.0.1', '2026-02-20 13:38:19');
 
 -- --------------------------------------------------------
 
@@ -161,7 +222,26 @@ CREATE TABLE `lpg_daily_records` (
   `remarks` text,
   `recorded_by` varchar(100) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `lpg_daily_records`
+--
+
+INSERT INTO `lpg_daily_records` (`id`, `doc_id`, `record_date`, `item_id`, `number_value`, `enum_value`, `remarks`, `recorded_by`, `created_at`) VALUES
+(1, 12, '2026-02-23', 1, 98.00, NULL, '', 'admin', '2026-02-23 01:35:02'),
+(2, 12, '2026-02-23', 2, 45.00, NULL, '', 'admin', '2026-02-23 01:35:02'),
+(3, 12, '2026-02-23', 3, 48.00, NULL, '', 'admin', '2026-02-23 01:35:02'),
+(4, 12, '2026-02-23', 4, 95.00, NULL, '', 'admin', '2026-02-23 01:35:02'),
+(5, 12, '2026-02-23', 5, 25.00, NULL, '', 'admin', '2026-02-23 01:35:02'),
+(6, 12, '2026-02-23', 6, NULL, 'OK', '', 'admin', '2026-02-23 01:35:03'),
+(7, 12, '2026-02-23', 7, NULL, 'OK', '', 'admin', '2026-02-23 01:35:03'),
+(8, 12, '2026-02-23', 8, NULL, 'OK', '', 'admin', '2026-02-23 01:35:03'),
+(9, 12, '2026-02-23', 9, NULL, 'NG', '', 'admin', '2026-02-23 01:35:03'),
+(10, 12, '2026-02-23', 10, NULL, 'NG', '', 'admin', '2026-02-23 01:35:03'),
+(11, 12, '2026-02-23', 11, NULL, 'NG', '', 'admin', '2026-02-23 01:35:03'),
+(12, 12, '2026-02-23', 12, NULL, 'OK', '', 'admin', '2026-02-23 01:35:03'),
+(13, 12, '2026-02-23', 13, NULL, 'OK', '', 'admin', '2026-02-23 01:35:03');
 
 -- --------------------------------------------------------
 
@@ -177,8 +257,29 @@ CREATE TABLE `lpg_inspection_items` (
   `standard_value` varchar(100) DEFAULT NULL,
   `unit` varchar(20) DEFAULT NULL,
   `enum_options` json DEFAULT NULL,
-  `sort_order` int DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `sort_order` int DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `lpg_inspection_items`
+--
+
+INSERT INTO `lpg_inspection_items` (`id`, `item_no`, `item_name`, `item_type`, `standard_value`, `unit`, `enum_options`, `sort_order`, `created_at`, `updated_at`) VALUES
+(1, 1, 'ปริมาณ LPG', 'number', '100', '', NULL, NULL, '2026-02-23 01:05:16', '2026-02-23 01:26:05'),
+(2, 2, 'อุณหภูมิในถัง', 'number', '40', '', NULL, NULL, '2026-02-23 01:15:45', '2026-02-23 01:26:18'),
+(3, 3, 'แรงดันในถัง', 'number', '50', '', NULL, NULL, '2026-02-23 01:16:03', '2026-02-23 01:26:27'),
+(4, 4, 'ระดับน้ำระบายความร้อนใน Vaporizer', 'number', '100', '', NULL, NULL, '2026-02-23 01:16:24', '2026-02-23 01:26:34'),
+(5, 5, 'อุณหภูมิในถัง Vaporizer', 'number', '40', '', NULL, NULL, '2026-02-23 01:16:36', '2026-02-23 01:26:42'),
+(6, 6, 'วาล์วระบายแรงดัน (Pressure Relief Valve)', 'enum', 'OK', '', '[\"OK\", \"NG\"]', NULL, '2026-02-23 01:16:57', '2026-02-23 01:18:15'),
+(7, 7, 'บอลวาล์ว(Ball Valve)', 'enum', 'OK', '', '[\"OK\", \"NG\"]', NULL, '2026-02-23 01:17:29', '2026-02-23 01:18:13'),
+(8, 8, 'อุปกรณ์ปรับแรงดัน (Pressure Regulator)', 'enum', 'OK', '', '[\"OK\", \"NG\"]', NULL, '2026-02-23 01:18:37', '2026-02-23 01:18:37'),
+(9, 9, 'ชุดดักกากก๊าซ (Oil Trap)', 'enum', 'OK', '', '[\"OK\", \"NG\"]', NULL, '2026-02-23 01:19:51', '2026-02-23 01:19:51'),
+(10, 10, 'วาล์วปิดฉุกเฉิน (Emergency Shut Off Vale)', 'enum', 'OK', '', '[\"OK\", \"NG\"]', NULL, '2026-02-23 01:20:10', '2026-02-23 01:20:10'),
+(11, 11, 'เครื่องช่วยระเหย gas(Vaporizer) Vaporizer', 'enum', 'OK', '', '[\"OK\", \"NG\"]', NULL, '2026-02-23 01:20:27', '2026-02-23 01:20:27'),
+(12, 12, 'แรงดันไอGAS ในVaporizer', 'enum', 'OK', '', '[\"OK\", \"NG\"]', NULL, '2026-02-23 01:20:45', '2026-02-23 01:20:45'),
+(13, 13, 'สภาพน้ำใน Vaporizer', 'enum', 'OK', '', '[\"OK\", \"NG\"]', NULL, '2026-02-23 01:21:05', '2026-02-23 01:21:05');
 
 -- --------------------------------------------------------
 
@@ -196,7 +297,17 @@ CREATE TABLE `mc_air` (
   `unit` varchar(20) DEFAULT NULL,
   `status` tinyint(1) DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `mc_air`
+--
+
+INSERT INTO `mc_air` (`id`, `machine_code`, `machine_name`, `brand`, `model`, `capacity`, `unit`, `status`, `created_at`) VALUES
+(1, 'AC001', 'Air Comp.No.1', '', '', 0.00, 'kW', 1, '2026-02-21 17:05:39'),
+(2, 'AC002', 'Air Comp.No.2', '', '', 0.00, 'kW', 1, '2026-02-21 17:05:56'),
+(3, 'AC003', 'Air Comp.No.3', '', '', 0.00, 'kW', 1, '2026-02-21 17:06:10'),
+(4, 'AC004', 'Air Comp.No.4', '', '', 0.00, 'kW', 1, '2026-02-21 17:06:22');
 
 -- --------------------------------------------------------
 
@@ -214,7 +325,16 @@ CREATE TABLE `mc_boiler` (
   `pressure_rating` decimal(10,2) DEFAULT NULL,
   `status` tinyint(1) DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `mc_boiler`
+--
+
+INSERT INTO `mc_boiler` (`id`, `machine_code`, `machine_name`, `brand`, `model`, `capacity`, `pressure_rating`, `status`, `created_at`) VALUES
+(1, 'BLR-001', 'Boiler No.1', '', '', 0.00, 0.00, 1, '2026-02-23 07:13:23'),
+(2, 'BLR-002', 'Boiler No.2', '', '', 0.00, 0.00, 1, '2026-02-23 07:14:50'),
+(3, 'BLR-003', 'Boiler No.3', '', '', 0.00, 0.00, 1, '2026-02-23 07:20:13');
 
 -- --------------------------------------------------------
 
@@ -231,7 +351,18 @@ CREATE TABLE `mc_mdb_water` (
   `initial_reading` decimal(10,2) DEFAULT NULL,
   `status` tinyint(1) DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `mc_mdb_water`
+--
+
+INSERT INTO `mc_mdb_water` (`id`, `meter_code`, `meter_name`, `meter_type`, `location`, `initial_reading`, `status`, `created_at`) VALUES
+(1, 'E-001', 'MDB 1', 'electricity', 'อาคาร 1 ชั้น 1', 0.00, 1, '2026-02-22 04:33:50'),
+(2, 'E-002', 'MDB 2', 'electricity', 'อาคาร 1 ชั้น 1', 0.00, 1, '2026-02-22 04:37:55'),
+(3, 'E-003', 'MDB 3', 'electricity', 'อาคาร 1 ชั้น 1', 1000.00, 1, '2026-02-23 02:16:25'),
+(4, 'E-004', 'MDB 4', 'electricity', 'อาคาร 2 ชั้น 1', 1000.00, 1, '2026-02-23 02:16:55'),
+(5, 'W-001', 'WATER', 'water', '', 2000.00, 1, '2026-02-23 02:24:52');
 
 -- --------------------------------------------------------
 
@@ -250,7 +381,41 @@ CREATE TABLE `meter_daily_readings` (
   `remarks` text,
   `recorded_by` varchar(100) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `meter_daily_readings`
+--
+
+INSERT INTO `meter_daily_readings` (`id`, `doc_id`, `meter_id`, `record_date`, `morning_reading`, `evening_reading`, `remarks`, `recorded_by`, `created_at`) VALUES
+(1, 11, 1, '2026-02-22', 1000.00, 1200.00, '', 'admin', '2026-02-22 04:46:01'),
+(2, 11, 2, '2026-02-22', 1000.00, 1300.00, '', 'admin', '2026-02-23 02:12:04'),
+(3, 11, 3, '2026-02-22', 1000.00, 1400.00, '', 'admin', '2026-02-23 02:17:17'),
+(4, 11, 4, '2026-02-22', 1000.00, 1700.00, '', 'admin', '2026-02-23 02:17:31'),
+(5, 11, 5, '2026-02-22', 2000.00, 3000.00, '', 'admin', '2026-02-23 02:35:12');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `monthly_electricity_summary`
+--
+
+CREATE TABLE `monthly_electricity_summary` (
+  `id` int NOT NULL,
+  `doc_id` int DEFAULT NULL,
+  `record_month` date NOT NULL,
+  `ee_unit` decimal(10,2) NOT NULL,
+  `water_unit` decimal(10,2) DEFAULT '0.00',
+  `cost_per_unit` decimal(10,4) NOT NULL,
+  `water_cost_per_unit` decimal(10,4) DEFAULT '0.0000',
+  `total_cost` decimal(10,2) GENERATED ALWAYS AS ((`ee_unit` * `cost_per_unit`)) STORED,
+  `total_water_cost` decimal(10,2) GENERATED ALWAYS AS ((`water_unit` * `water_cost_per_unit`)) STORED,
+  `pe` decimal(5,4) DEFAULT NULL,
+  `remarks` text,
+  `recorded_by` varchar(50) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -267,7 +432,7 @@ CREATE TABLE `monthly_summaries` (
   `peak_usage` decimal(10,2) DEFAULT NULL,
   `data` json DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -281,7 +446,7 @@ CREATE TABLE `permissions` (
   `permission_name` varchar(255) NOT NULL,
   `module` varchar(50) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `permissions`
@@ -323,7 +488,7 @@ CREATE TABLE `roles` (
   `role_name` varchar(50) NOT NULL,
   `description` text,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `roles`
@@ -343,7 +508,7 @@ INSERT INTO `roles` (`id`, `role_name`, `description`, `created_at`) VALUES
 CREATE TABLE `role_permissions` (
   `role_id` int NOT NULL,
   `permission_id` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `role_permissions`
@@ -391,14 +556,14 @@ CREATE TABLE `users` (
   `last_login` datetime DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `users`
 --
 
 INSERT INTO `users` (`id`, `username`, `password`, `fullname`, `email`, `role`, `status`, `login_attempts`, `last_login`, `created_at`, `updated_at`) VALUES
-(1, 'admin', '$2y$10$J9LENAWbcJI1rCbdjRLvTuJZ7Y/VYtGZcIxL7fY8wfW5ZdmrFF54i', 'ผู้ดูแลระบบ', 'admin@eums.local', 'admin', 1, 0, '2026-02-19 10:00:05', '2026-02-19 02:07:30', '2026-02-19 03:00:05'),
+(1, 'admin', '$2y$10$J9LENAWbcJI1rCbdjRLvTuJZ7Y/VYtGZcIxL7fY8wfW5ZdmrFF54i', 'ผู้ดูแลระบบ', 'admin@eums.local', 'admin', 1, 0, '2026-02-23 07:21:49', '2026-02-19 02:07:30', '2026-02-23 00:21:49'),
 (2, 'engineer', '$2a$12$z6jQkUI8h6ByW2/e8km2LeAn69Bz.LN6QmbckXu1KepoSxZpQdwVS', 'Pornpipat', 'p_pornpipat@marugo-rubber.co.th', 'admin', 1, 0, NULL, '2026-02-19 10:24:58', '2026-02-19 10:24:58');
 
 -- --------------------------------------------------------
@@ -411,7 +576,7 @@ CREATE TABLE `user_permissions` (
   `user_id` int NOT NULL,
   `permission_id` int NOT NULL,
   `granted` tinyint(1) DEFAULT '1'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -427,7 +592,7 @@ CREATE TABLE `user_tokens` (
   `expires_at` datetime NOT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Indexes for dumped tables
@@ -481,7 +646,8 @@ ALTER TABLE `documents`
 ALTER TABLE `electricity_summary`
   ADD PRIMARY KEY (`id`),
   ADD KEY `doc_id` (`doc_id`),
-  ADD KEY `idx_summary_date` (`record_date`);
+  ADD KEY `idx_summary_date` (`record_date`),
+  ADD KEY `idx_month_year` (`month`,`year`);
 
 --
 -- Indexes for table `login_attempts`
@@ -534,6 +700,14 @@ ALTER TABLE `meter_daily_readings`
   ADD KEY `doc_id` (`doc_id`),
   ADD KEY `meter_id` (`meter_id`),
   ADD KEY `idx_meter_date` (`record_date`);
+
+--
+-- Indexes for table `monthly_electricity_summary`
+--
+ALTER TABLE `monthly_electricity_summary`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `doc_id` (`doc_id`),
+  ADD KEY `idx_month` (`record_month`);
 
 --
 -- Indexes for table `monthly_summaries`
@@ -599,72 +773,78 @@ ALTER TABLE `activity_logs`
 -- AUTO_INCREMENT for table `air_daily_records`
 --
 ALTER TABLE `air_daily_records`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `air_inspection_standards`
 --
 ALTER TABLE `air_inspection_standards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `boiler_daily_records`
 --
 ALTER TABLE `boiler_daily_records`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `documents`
 --
 ALTER TABLE `documents`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT for table `electricity_summary`
 --
 ALTER TABLE `electricity_summary`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `login_attempts`
 --
 ALTER TABLE `login_attempts`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `lpg_daily_records`
 --
 ALTER TABLE `lpg_daily_records`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `lpg_inspection_items`
 --
 ALTER TABLE `lpg_inspection_items`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `mc_air`
 --
 ALTER TABLE `mc_air`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `mc_boiler`
 --
 ALTER TABLE `mc_boiler`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `mc_mdb_water`
 --
 ALTER TABLE `mc_mdb_water`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `meter_daily_readings`
 --
 ALTER TABLE `meter_daily_readings`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `monthly_electricity_summary`
+--
+ALTER TABLE `monthly_electricity_summary`
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
@@ -747,6 +927,12 @@ ALTER TABLE `lpg_daily_records`
 ALTER TABLE `meter_daily_readings`
   ADD CONSTRAINT `meter_daily_readings_ibfk_1` FOREIGN KEY (`doc_id`) REFERENCES `documents` (`id`),
   ADD CONSTRAINT `meter_daily_readings_ibfk_2` FOREIGN KEY (`meter_id`) REFERENCES `mc_mdb_water` (`id`);
+
+--
+-- Constraints for table `monthly_electricity_summary`
+--
+ALTER TABLE `monthly_electricity_summary`
+  ADD CONSTRAINT `monthly_electricity_summary_ibfk_1` FOREIGN KEY (`doc_id`) REFERENCES `documents` (`id`);
 
 --
 -- Constraints for table `role_permissions`
