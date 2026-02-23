@@ -268,7 +268,7 @@ if ($machineId > 0) {
                     กราฟแสดงข้อมูล
                 </h3>
                 <div class="card-tools">
-                    <select id="chartType" class="form-control form-control-sm" style="width: 150px;">
+                    <select id="chartType" class="form-control form-control-sm" style="width: 150px; height: 38px;">
                         <option value="line">กราฟเส้น</option>
                         <option value="bar">กราฟแท่ง</option>
                     </select>
