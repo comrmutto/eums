@@ -35,12 +35,27 @@ $db = getDB();
 
 // Get parameters
 $reportType = isset($_GET['report_type']) ? $_GET['report_type'] : 'daily';
-$startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
-$endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
 $itemId = isset($_GET['item_id']) ? (int)$_GET['item_id'] : 0;
 $itemType = isset($_GET['item_type']) ? $_GET['item_type'] : '';
 $status = isset($_GET['status']) ? $_GET['status'] : '';
 $compareWith = isset($_GET['compare_with']) ? $_GET['compare_with'] : 'previous';
+
+// Format dates for display
+$rawStartDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
+if (strpos($rawStartDate, '/') !== false) {
+    $parts = explode('/', $rawStartDate);
+    $startDate = $parts[2] . '-' . $parts[1] . '-' . $parts[0];
+} else {
+    $startDate = $rawStartDate;
+}
+
+$rawEndDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
+if (strpos($rawEndDate, '/') !== false) {
+    $parts = explode('/', $rawEndDate);
+    $endDate = $parts[2] . '-' . $parts[1] . '-' . $parts[0];
+} else {
+    $endDate = $rawEndDate;
+}
 
 // Format dates for display
 $displayStartDate = date('d/m/Y', strtotime($startDate));
@@ -370,7 +385,7 @@ if ($itemId > 0) {
                     กราฟแสดงข้อมูล
                 </h3>
                 <div class="card-tools">
-                    <select id="chartType" class="form-control form-control-sm" style="width: 150px;">
+                    <select id="chartType" class="form-control form-control-sm" style="width: 150px; height: 38px;">
                         <option value="line">กราฟเส้น</option>
                         <option value="bar">กราฟแท่ง</option>
                         <option value="pie">กราฟวงกลม</option>
@@ -820,7 +835,8 @@ function renderChart(data, type) {
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            let label = context.dataset.label || '';
+                            // ปรับแก้ Tooltip ให้รองรับกราฟวงกลม
+                            let label = context.dataset.label || context.label || '';
                             let value = context.raw || 0;
                             return label + ': ' + value.toFixed(2) + (context.dataset.unit || '');
                         }
@@ -832,16 +848,40 @@ function renderChart(data, type) {
     
     // Configure based on chart type
     if (type === 'pie' || type === 'doughnut') {
+        let pieLabels = [];
+        let pieValues = [];
+        
+        // ดึงข้อมูลตามโครงสร้างที่แต่ละรายงานส่งมา
         if (data.pieData) {
-            chartConfig.data = {
-                labels: data.pieData.labels,
-                datasets: [{
-                    data: data.pieData.values,
-                    backgroundColor: ['#28a745', '#dc3545', '#ffc107', '#17a2b8', '#007bff'],
-                    borderWidth: 0
-                }]
-            };
+            pieLabels = data.pieData.labels;
+            pieValues = data.pieData.values;
+        } else if (data.values) {
+            pieLabels = data.labels;
+            pieValues = data.values;
+        } else if (data.usage) {
+            pieLabels = data.labels;
+            pieValues = data.usage;
+        } else if (data.datasets && data.datasets.length > 0) {
+            pieLabels = data.labels;
+            pieValues = data.datasets[0].data;
         }
+
+        // เพิ่มชุดสีให้เพียงพอกับข้อมูลหลายๆ วัน/เดือน
+        const colors = [
+            '#007bff', '#28a745', '#dc3545', '#ffc107', '#17a2b8',
+            '#6610f2', '#e83e8c', '#fd7e14', '#20c997', '#6c757d',
+            '#343a40', '#001f3f', '#39CCCC', '#3D9970', '#01FF70'
+        ];
+
+        chartConfig.data = {
+            labels: pieLabels,
+            datasets: [{
+                data: pieValues,
+                backgroundColor: colors,
+                borderWidth: 1
+            }]
+        };
+        
     } else {
         // Line or bar chart
         if (data.datasets) {
@@ -869,31 +909,29 @@ function renderChart(data, type) {
                 ]
             };
             
-            if (type !== 'pie' && type !== 'doughnut') {
-                chartConfig.options.scales = {
-                    y: {
-                        type: 'linear',
+            chartConfig.options.scales = {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
                         display: true,
-                        position: 'left',
-                        title: {
-                            display: true,
-                            text: 'ปริมาณ'
-                        }
-                    },
-                    y1: {
-                        type: 'linear',
-                        display: true,
-                        position: 'right',
-                        title: {
-                            display: true,
-                            text: 'อัตราผ่าน (%)'
-                        },
-                        grid: {
-                            drawOnChartArea: false
-                        }
+                        text: 'ปริมาณ'
                     }
-                };
-            }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'อัตราผ่าน (%)'
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                }
+            };
         } else {
             chartConfig.data.datasets = [{
                 label: data.label || 'ปริมาณการใช้',
