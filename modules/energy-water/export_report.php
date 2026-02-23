@@ -65,7 +65,7 @@ function getMonthReadings($db, $start_date, $end_date) {
         FROM meter_daily_readings r
         JOIN mc_mdb_water m ON r.meter_id = m.id
         WHERE r.record_date BETWEEN ? AND ?
-        ORDER BY r.record_date ASC, m.sort_order ASC
+        ORDER BY r.record_date ASC, m.meter_code ASC
     ";
     $stmt = $db->prepare($sql);
     $stmt->execute([$start_date, $end_date]);
