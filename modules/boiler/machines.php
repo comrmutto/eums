@@ -200,6 +200,11 @@ $machines = $stmt->fetchAll();
     </div>
 </div>
 
+<?php
+// Include footer
+require_once __DIR__ . '/../../includes/footer.php';
+?>
+
 <script>
 $(document).ready(function() {
     $('#machineForm').on('submit', function(e) {
@@ -260,14 +265,37 @@ function saveMachine() {
         success: function(response) {
             if (response.success) {
                 $('#machineModal').modal('hide');
-                showNotification('บันทึกข้อมูลเรียบร้อย', 'success');
+                EUMS.showNotification('บันทึกข้อมูลเรียบร้อย', 'success');
                 setTimeout(function() {
                     location.reload();
                 }, 1500);
             } else {
-                showNotification(response.message, 'danger');
+                EUMS.showNotification(response.message, 'error');
             }
         }
+    });
+}
+
+function showToast(message, type) {
+    const toast = `<div class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="true">
+        <div class="toast-header">
+            <strong class="mr-auto">แจ้งเตือน</strong>
+            <button type="button" class="ml-2 mb-1 close" data-dismiss="toast">
+                <span>&times;</span>
+            </button>
+        </div>
+        <div class="toast-body">${message}</div>
+    </div>`;
+    
+    const toastContainer = $('#toastContainer');
+    toastContainer.append(toast);
+    
+    const $toast = $('.toast').toast({
+        autohide: true,
+    }).toast('show');
+    
+    $toast.on('hidden.bs.toast', function() {
+        $(this).remove();
     });
 }
 
@@ -292,12 +320,12 @@ function deleteMachine(id) {
                     data: { id: id, force: usage.has_records },
                     success: function(response) {
                         if (response.success) {
-                            showNotification('ลบข้อมูลเรียบร้อย', 'success');
+                            EUMS.showNotification('ลบข้อมูลเรียบร้อย', 'success');
                             setTimeout(function() {
                                 location.reload();
                             }, 1500);
                         } else {
-                            showNotification(response.message, 'danger');
+                            EUMS.showNotification(response.message, 'error');
                         }
                     }
                 });
@@ -335,8 +363,3 @@ function validateMachineCode() {
     }
 }
 </script>
-
-<?php
-// Include footer
-require_once __DIR__ . '/../../includes/footer.php';
-?>

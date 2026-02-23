@@ -35,15 +35,23 @@ $db = getDB();
 
 // Get parameters
 $reportType = isset($_GET['report_type']) ? $_GET['report_type'] : 'daily';
-$startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
-$endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
+$startDateInput = isset($_GET['start_date']) ? $_GET['start_date'] : date('01/m/Y');
+$endDateInput = isset($_GET['end_date']) ? $_GET['end_date'] : date('d/m/Y');
+
 $machineId = isset($_GET['machine_id']) ? (int)$_GET['machine_id'] : 0;
 $parameter = isset($_GET['parameter']) ? $_GET['parameter'] : 'all';
 $compareWith = isset($_GET['compare_with']) ? $_GET['compare_with'] : 'previous';
 
-// Format dates for display
-$displayStartDate = date('d/m/Y', strtotime($startDate));
-$displayEndDate = date('d/m/Y', strtotime($endDate));
+// แปลงจาก DD/MM/YYYY เป็น YYYY-MM-DD เพื่อเอาไปค้นหาในฐานข้อมูล
+$s_parts = explode('/', $startDateInput);
+$startDate = count($s_parts) == 3 ? $s_parts[2] . '-' . $s_parts[1] . '-' . $s_parts[0] : date('Y-m-01');
+
+$e_parts = explode('/', $endDateInput);
+$endDate = count($e_parts) == 3 ? $e_parts[2] . '-' . $e_parts[1] . '-' . $e_parts[0] : date('Y-m-d');
+
+// Format dates for display (ส่งกลับไปโชว์ในช่อง Input)
+$displayStartDate = $startDateInput;
+$displayEndDate = $endDateInput;
 
 // Get all machines for dropdown
 $stmt = $db->query("
@@ -310,7 +318,7 @@ if ($machineId > 0) {
             <div class="col-lg-4 col-6">
                 <div class="small-box bg-primary">
                     <div class="inner">
-                        <h3><?php echo number_format($efficiencyData['fuel_efficiency'], 2); ?></h3>
+                        <h3><?php echo number_format($efficiencyData['fuel_efficiency'], 3); ?></h3>
                         <p>ประสิทธิภาพเชื้อเพลิง (bar/L)</p>
                     </div>
                     <div class="icon">
@@ -402,7 +410,7 @@ if ($machineId > 0) {
                     กราฟแสดงข้อมูล
                 </h3>
                 <div class="card-tools">
-                    <select id="chartType" class="form-control form-control-sm" style="width: 150px;">
+                    <select id="chartType" class="form-control form-control-sm" style="width: 150px; height: 38px;">
                         <option value="line">กราฟเส้น</option>
                         <option value="bar">กราฟแท่ง</option>
                     </select>
@@ -696,41 +704,56 @@ if ($machineId > 0) {
     </div>
 </section>
 
+<?php
+// Include footer
+require_once __DIR__ . '/../../includes/footer.php';
+?>
+
 <script>
 let reportChart = null;
 
 $(document).ready(function() {
-    // Initialize date pickers
-    $('#startDatePicker').datetimepicker({
-        format: 'DD/MM/YYYY',
-        locale: 'th',
-        useCurrent: false
-    });
+    console.log('Document ready');
     
-    $('#endDatePicker').datetimepicker({
-        format: 'DD/MM/YYYY',
-        locale: 'th',
-        useCurrent: false
-    });
+    // Initialize date pickers
+    if (typeof $.fn.datetimepicker !== 'undefined') {
+        $('#startDatePicker').datetimepicker({
+            format: 'DD/MM/YYYY',
+            locale: 'th',
+            useCurrent: false
+        });
+        
+        $('#endDatePicker').datetimepicker({
+            format: 'DD/MM/YYYY',
+            locale: 'th',
+            useCurrent: false
+        });
+    } else {
+        console.warn('datetimepicker not loaded');
+    }
     
     // Initialize select2
-    $('.select2').select2({
-        theme: 'bootstrap-5',
-        width: '100%'
-    });
+    if (typeof $.fn.select2 !== 'undefined') {
+        $('.select2').select2({
+            theme: 'bootstrap-5',
+            width: '100%'
+        });
+    } else {
+        console.warn('select2 not loaded');
+    }
     
     // Initialize DataTable if exists
-    if ($('#reportTable').length) {
+    if ($('#reportTable').length && typeof $.fn.DataTable !== 'undefined') {
         $('#reportTable').DataTable({
             language: {
-                url: '//cdn.datatables.net/plug-ins/1.10.21/i18n/Thai.json'
+                url: 'https://cdn.datatables.net/plug-ins/1.10.21/i18n/Thai.json'
             },
             pageLength: 25,
             order: [[0, 'desc']]
         });
     }
     
-    // Toggle fields based on report type
+    // Toggle fields based on report type   
     toggleReportFields();
     
     $('#reportType').on('change', function() {
@@ -739,17 +762,23 @@ $(document).ready(function() {
     
     // Chart type change
     $('#chartType').on('change', function() {
-        renderChart(<?php echo json_encode($chartData); ?>, $(this).val());
+        const chartData = <?php echo json_encode($chartData); ?>;
+        renderChart(chartData, $(this).val());
     });
     
     // Render initial chart
     <?php if (!empty($chartData)): ?>
-    renderChart(<?php echo json_encode($chartData); ?>, 'line');
+    const chartData = <?php echo json_encode($chartData); ?>;
+    renderChart(chartData, 'line');
     <?php endif; ?>
 });
 
+/**
+ * Toggle report fields based on selected report type
+ */
 function toggleReportFields() {
     const type = $('#reportType').val();
+    console.log('Toggling fields for report type:', type);
     
     // Hide all optional fields first
     $('#parameterDiv').hide();
@@ -766,10 +795,19 @@ function toggleReportFields() {
 }
 
 function renderChart(data, type) {
-    const ctx = document.getElementById('reportChart').getContext('2d');
+    const ctx = document.getElementById('reportChart');
+    if (!ctx) {
+        console.error('Canvas element not found');
+        return;
+    }
     
     if (reportChart) {
         reportChart.destroy();
+    }
+    
+    if (!data || (!data.labels && !data.datasets)) {
+        console.warn('No chart data to render');
+        return;
     }
     
     let chartConfig = {
@@ -812,7 +850,10 @@ function renderChart(data, type) {
                     borderColor: '#17a2b8',
                     backgroundColor: type === 'line' ? 'rgba(23, 162, 184, 0.1)' : 'rgba(23, 162, 184, 0.5)',
                     yAxisID: 'y',
-                    unit: ' bar'
+                    unit: ' bar',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: type === 'line'
                 },
                 {
                     label: 'อุณหภูมิไอน้ำ (°C)',
@@ -820,7 +861,10 @@ function renderChart(data, type) {
                     borderColor: '#dc3545',
                     backgroundColor: type === 'line' ? 'rgba(220, 53, 69, 0.1)' : 'rgba(220, 53, 69, 0.5)',
                     yAxisID: 'y1',
-                    unit: ' °C'
+                    unit: ' °C',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: type === 'line'
                 }
             ]
         };
@@ -860,7 +904,12 @@ function renderChart(data, type) {
         }];
     }
     
-    reportChart = new Chart(ctx, chartConfig);
+    try {
+        reportChart = new Chart(ctx, chartConfig);
+        console.log('Chart rendered successfully');
+    } catch (e) {
+        console.error('Error rendering chart:', e);
+    }
 }
 
 function exportReport() {
@@ -871,9 +920,10 @@ function exportReport() {
 function printReport() {
     window.print();
 }
-</script>  
+</script>
+
 <?php
-// Report data fetching functions
+// Report data fetching functions (PHP functions remain the same)
 function getDailyReport($db, $startDate, $endDate, $machineId) {
     $sql = "
         SELECT 
@@ -1148,6 +1198,14 @@ function calculateEfficiencyMetrics($data) {
     $totalTemp = 0;
     $count = count($data);
     
+    if ($count == 0) {
+        return [
+            'fuel_efficiency' => 0,
+            'thermal_efficiency' => 0,
+            'operating_efficiency' => 0
+        ];
+    }
+    
     foreach ($data as $row) {
         $totalPressure += $row['steam_pressure'];
         $totalFuel += $row['fuel_consumption'];
@@ -1225,7 +1283,7 @@ function calculateParameterStatistics($data, $parameter) {
     $values = [];
     
     foreach ($data as $row) {
-        if ($parameter == 'pressure') {
+        if ($parameter == 'pressure' || $parameter == 'all') {
             $values[] = $row['steam_pressure'];
         } elseif ($parameter == 'temperature') {
             $values[] = $row['steam_temperature'];
@@ -1234,9 +1292,11 @@ function calculateParameterStatistics($data, $parameter) {
         }
     }
     
+    $avg = !empty($values) ? array_sum($values) / count($values) : 0;
+    
     return [
-        'avg_pressure' => !empty($values) ? array_sum($values) / count($values) : 0,
-        'avg_temperature' => 0,
+        'avg_pressure' => $avg,
+        'avg_temperature' => $avg,
         'total_fuel' => 0,
         'total_hours' => 0
     ];
@@ -1321,6 +1381,9 @@ function getComparisonReport($db, $startDate, $endDate, $machineId, $compareWith
     $current = getPeriodSummary($db, $startDate, $endDate, $machineId);
     $previous = getPeriodSummary($db, $prevStart, $prevEnd, $machineId);
     
+    if (!$current) $current = ['avg_pressure' => 0, 'avg_temperature' => 0, 'total_fuel' => 0, 'total_hours' => 0, 'records' => 0];
+    if (!$previous) $previous = ['avg_pressure' => 0, 'avg_temperature' => 0, 'total_fuel' => 0, 'total_hours' => 0, 'records' => 0];
+    
     $pressureChange = $current['avg_pressure'] - $previous['avg_pressure'];
     $pressureChangePercent = $previous['avg_pressure'] > 0 ? ($pressureChange / $previous['avg_pressure']) * 100 : 0;
     
@@ -1373,8 +1436,29 @@ function getPeriodSummary($db, $startDate, $endDate, $machineId) {
 }
 
 function getStandardComparison($db, $startDate, $endDate, $machineId) {
-    // Implementation for standard comparison
-    return [];
+    // Return default values for standard comparison
+    return [
+        [
+            'period' => 'ช่วงเวลาปัจจุบัน',
+            'avg_pressure' => 0,
+            'avg_temperature' => 0,
+            'total_fuel' => 0,
+            'total_hours' => 0,
+            'records' => 0,
+            'change' => null,
+            'change_percent' => null
+        ],
+        [
+            'period' => 'ค่ามาตรฐาน',
+            'avg_pressure' => 10,
+            'avg_temperature' => 180,
+            'total_fuel' => 0,
+            'total_hours' => 0,
+            'records' => 0,
+            'change' => null,
+            'change_percent' => null
+        ]
+    ];
 }
 
 function calculateComparisonSummary($data) {
@@ -1519,7 +1603,22 @@ function prepareMachineDetailChartData($data) {
         ]
     ];
 }
-
-// Include footer
-require_once __DIR__ . '/../../includes/footer.php';
 ?>
+
+<style>
+@media print {
+    .btn, .card-tools, .main-footer, .main-header, .main-sidebar {
+        display: none !important;
+    }
+    .content-wrapper {
+        margin-left: 0 !important;
+    }
+    .card {
+        border: 1px solid #dee2e6 !important;
+    }
+    .text-danger {
+        color: #dc3545 !important;
+        font-weight: bold;
+    }
+}
+</style>

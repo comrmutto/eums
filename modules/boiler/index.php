@@ -464,6 +464,11 @@ $chartData = $stmt->fetchAll();
     </div>
 </div>
 
+<?php
+// Include footer
+require_once __DIR__ . '/../../includes/footer.php';
+?>
+
 <script>
 let pressureChart = null;
 let fuelChart = null;
@@ -653,16 +658,16 @@ function saveRecord() {
         success: function(response) {
             if (response.success) {
                 $('#recordModal').modal('hide');
-                showNotification('บันทึกข้อมูลเรียบร้อย', 'success');
+                EUMS.showNotification('บันทึกข้อมูลเรียบร้อย', 'success');
                 setTimeout(function() {
                     location.reload();
                 }, 1500);
             } else {
-                showNotification(response.message, 'danger');
+                EUMS.showNotification(response.message, 'error');
             }
         },
         error: function() {
-            showNotification('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'danger');
+            showNotification('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
         }
     });
 }
@@ -674,13 +679,13 @@ function deleteRecord(id) {
             method: 'POST',
             data: { id: id },
             success: function(response) {
-                if (response.success) {
-                    showNotification('ลบข้อมูลเรียบร้อย', 'success');
+                if (response.success) { 
+                    EUMS.showNotification('ลบข้อมูลเรียบร้อย', 'success');
                     setTimeout(function() {
                         location.reload();
                     }, 1500);
                 } else {
-                    showNotification(response.message, 'danger');
+                    showNotification(response.message, 'error');
                 }
             }
         });
@@ -697,9 +702,9 @@ function updateDocument() {
         data: formData,
         success: function(response) {
             if (response.success) {
-                showNotification('อัปเดตเอกสารเรียบร้อย', 'success');
+                EUMS.showNotification('อัปเดตเอกสารเรียบร้อย', 'success');
             } else {
-                showNotification(response.message, 'danger');
+                EUMS.showNotification(response.message, 'error');
             }
         }
     });
@@ -713,8 +718,3 @@ function goToToday() {
     window.location.href = 'index.php?date=' + yyyy + '-' + mm + '-' + dd;
 }
 </script>
-
-<?php
-// Include footer
-require_once __DIR__ . '/../../includes/footer.php';
-?>
