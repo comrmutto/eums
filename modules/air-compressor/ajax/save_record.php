@@ -29,7 +29,12 @@ $doc_id = isset($_POST['doc_id']) ? (int)$_POST['doc_id'] : 0;
 $machine_id = isset($_POST['machine_id']) ? (int)$_POST['machine_id'] : 0;
 $inspection_item_id = isset($_POST['inspection_item_id']) ? (int)$_POST['inspection_item_id'] : 0;
 $record_date = isset($_POST['record_date']) ? DateTime::createFromFormat('d/m/Y', $_POST['record_date']) : null;
-$actual_value = isset($_POST['actual_value']) ? (float)$_POST['actual_value'] : 0;
+$before_value = isset($_POST['before_value']) && $_POST['before_value'] !== '' ? (float)$_POST['before_value'] : null;
+$after_value  = isset($_POST['after_value'])  && $_POST['after_value']  !== '' ? (float)$_POST['after_value']  : null;
+// actual_value = after - before (คำนวณฝั่ง server เพื่อความถูกต้อง)
+$actual_value = ($before_value !== null && $after_value !== null)
+    ? round($after_value - $before_value, 4)
+    : (isset($_POST['actual_value']) ? (float)$_POST['actual_value'] : 0);
 $remarks = isset($_POST['remarks']) ? trim($_POST['remarks']) : '';
 
 // Validate required fields
@@ -120,13 +125,15 @@ try {
             UPDATE air_daily_records 
             SET machine_id = ?, 
                 inspection_item_id = ?, 
-                record_date = ?, 
+                record_date = ?,
+                before_value = ?,
+                after_value = ?,
                 actual_value = ?, 
                 remarks = ?,
                 updated_at = NOW()
             WHERE id = ?
         ");
-        $stmt->execute([$machine_id, $inspection_item_id, $record_date_db, $actual_value, $remarks, $id]);
+        $stmt->execute([$machine_id, $inspection_item_id, $record_date_db, $before_value, $after_value, $actual_value, $remarks, $id]);
         
         // Log activity
         logActivity($_SESSION['user_id'], 'update_air_record', "Updated record ID: $id");
@@ -135,10 +142,10 @@ try {
         // Insert new record
         $stmt = $db->prepare("
             INSERT INTO air_daily_records 
-            (doc_id, machine_id, inspection_item_id, record_date, actual_value, remarks, recorded_by, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+            (doc_id, machine_id, inspection_item_id, record_date, before_value, after_value, actual_value, remarks, recorded_by, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
         ");
-        $stmt->execute([$doc_id, $machine_id, $inspection_item_id, $record_date_db, $actual_value, $remarks, $_SESSION['username']]);
+        $stmt->execute([$doc_id, $machine_id, $inspection_item_id, $record_date_db, $before_value, $after_value, $actual_value, $remarks, $_SESSION['username']]);
         
         // Log activity
         logActivity($_SESSION['user_id'], 'add_air_record', "Added new record for machine ID: $machine_id");

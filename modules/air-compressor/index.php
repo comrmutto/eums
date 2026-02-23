@@ -284,7 +284,9 @@ foreach ($records as $record) {
                                 <th>วันที่</th>
                                 <th>เครื่องจักร</th>
                                 <th>หัวข้อตรวจสอบ</th>
-                                <th>ค่าที่วัดได้</th>
+                                <th class="text-right">Before</th>
+                                <th class="text-right">After</th>
+                                <th class="text-right">ค่าที่วัดได้<br><small>(After-Before)</small></th>
                                 <th>หน่วย</th>
                                 <th>ค่ามาตรฐาน</th>
                                 <th>สถานะ</th>
@@ -299,7 +301,9 @@ foreach ($records as $record) {
                                 <td><?php echo date('d/m/Y', strtotime($record['record_date'])); ?></td>
                                 <td><?php echo htmlspecialchars($record['machine_name']); ?></td>
                                 <td><?php echo htmlspecialchars($record['inspection_item']); ?></td>
-                                <td class="text-right"><?php echo number_format($record['actual_value'], 2); ?></td>
+                                <td class="text-right"><?php echo isset($record['before_value']) && $record['before_value'] !== null ? number_format($record['before_value'], 2) : '-'; ?></td>
+                                <td class="text-right"><?php echo isset($record['after_value']) && $record['after_value'] !== null ? number_format($record['after_value'], 2) : '-'; ?></td>
+                                <td class="text-right"><strong><?php echo number_format($record['actual_value'], 2); ?></strong></td>
                                 <td><?php 
                                     // Find unit from standards
                                     foreach ($standards as $s) {
@@ -420,12 +424,28 @@ foreach ($records as $record) {
                     </div>
                     
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="form-group">
-                                <label>ค่าที่วัดได้ <span class="text-danger">*</span></label>
-                                <input type="number" step="0.01" class="form-control" name="actual_value" id="actualValue" required>
+                                <label>ค่า Before <span class="text-danger">*</span></label>
+                                <input type="number" step="0.01" class="form-control" name="before_value" id="beforeValue" required>
+                                <small class="text-muted">ค่าเริ่มต้น (ดึงจาก After ของวันก่อน)</small>
                             </div>
                         </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>ค่า After <span class="text-danger">*</span></label>
+                                <input type="number" step="0.01" class="form-control" name="after_value" id="afterValue" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>ค่าที่วัดได้ (After - Before)</label>
+                                <input type="number" step="0.01" class="form-control bg-light" name="actual_value" id="actualValue" readonly>
+                                <small class="text-muted" id="unitLabel"></small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>หน่วย</label>
@@ -482,13 +502,25 @@ $(document).ready(function() {
     // Machine change event
     $('#machineId').on('change', function() {
         loadInspectionItems($(this).val());
+        loadBeforeDefault();
     });
     
     // Inspection item change event
     $('#inspectionItemId').on('change', function() {
         loadStandardValue($(this).val());
+        loadBeforeDefault();
     });
-    
+
+    // Date change — reload before default
+    $('#recordDate').on('changeDate change', function() {
+        loadBeforeDefault();
+    });
+
+    // Before / After → คำนวณ actual_value อัตโนมัติ
+    $('#beforeValue, #afterValue').on('input', function() {
+        calcActualValue();
+    });
+
     // Actual value change event
     $('#actualValue').on('input', function() {
         validateValue();
@@ -639,21 +671,59 @@ function loadStandardValue(itemId) {
     $('#unit').val(unit);
 }
 
+function calcActualValue() {
+    const before = parseFloat($('#beforeValue').val());
+    const after  = parseFloat($('#afterValue').val());
+    if (!isNaN(before) && !isNaN(after)) {
+        const diff = after - before;
+        $('#actualValue').val(diff.toFixed(2));
+        validateValue();
+    } else {
+        $('#actualValue').val('');
+        $('#statusAlert').hide();
+    }
+}
+
+function loadBeforeDefault() {
+    const machineId        = $('#machineId').val();
+    const inspectionItemId = $('#inspectionItemId').val();
+    const recordDate       = $('#recordDate').val();
+    const recordId         = $('#recordId').val(); // ถ้าเป็น edit ไม่ต้อง load
+
+    if (!machineId || !inspectionItemId || !recordDate || recordId) return;
+
+    $.ajax({
+        url: 'ajax/get_before_value.php',
+        method: 'GET',
+        data: {
+            machine_id:         machineId,
+            inspection_item_id: inspectionItemId,
+            record_date:        recordDate   // format dd/mm/yyyy
+        },
+        success: function(response) {
+            if (response.success && response.after_value !== null) {
+                $('#beforeValue').val(response.after_value);
+                calcActualValue();
+            }
+        }
+    });
+}
+
 function validateValue() {
     const value = parseFloat($('#actualValue').val());
     const option = $('#inspectionItemId option:selected');
     const min = parseFloat(option.data('min'));
     const max = parseFloat(option.data('max'));
     const standard = parseFloat(option.data('standard'));
-    
+
     if (isNaN(value)) {
         $('#statusAlert').hide();
         return;
     }
-    
+
     let isValid = true;
     let message = '';
-    
+
     if (min && max) {
         if (value < min || value > max) {
             isValid = false;
@@ -661,7 +731,7 @@ function validateValue() {
         } else {
             message = `ค่าอยู่ในช่วงมาตรฐาน`;
         }
-    } else {
+    } else if (!isNaN(standard) && standard > 0) {
         const tolerance = standard * 0.1;
         if (Math.abs(value - standard) > tolerance) {
             isValid = false;
@@ -670,7 +740,7 @@ function validateValue() {
             message = `ค่าอยู่ในเกณฑ์มาตรฐาน (ค่าเบี่ยงเบน: ${Math.abs(((value - standard) / standard * 100)).toFixed(2)}%)`;
         }
     }
-    
+
     $('#statusMessage').text(message);
     $('#statusAlert').removeClass('alert-success alert-danger')
         .addClass(isValid ? 'alert-success' : 'alert-danger')
@@ -681,7 +751,16 @@ function showAddModal() {
     $('#modalTitle').text('เพิ่มบันทึกข้อมูล');
     $('#recordForm')[0].reset();
     $('#recordId').val('');
+    $('#actualValue').val('');
+    $('#beforeValue').val('');
+    $('#afterValue').val('');
     $('#statusAlert').hide();
+    // set default date = today
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2,'0');
+    const mm = String(today.getMonth()+1).padStart(2,'0');
+    const yyyy = today.getFullYear();
+    $('#recordDate').val(dd+'/'+mm+'/'+yyyy);
     $('#recordModal').modal('show');
 }
 
@@ -696,14 +775,16 @@ function editRecord(id) {
                 $('#recordId').val(response.data.id);
                 $('#recordDate').val(response.data.record_date_thai);
                 $('#machineId').val(response.data.machine_id).trigger('change');
-                
+
                 setTimeout(function() {
                     $('#inspectionItemId').val(response.data.inspection_item_id).trigger('change');
+                    $('#beforeValue').val(response.data.before_value);
+                    $('#afterValue').val(response.data.after_value);
                     $('#actualValue').val(response.data.actual_value);
                     $('#remarks').val(response.data.remarks);
                     validateValue();
                 }, 500);
-                
+
                 $('#recordModal').modal('show');
             }
         }
