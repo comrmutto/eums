@@ -56,6 +56,7 @@ $displayEndDate = $endDateInput;
 $stmt = $db->query("SELECT * FROM mc_air WHERE status = 1 ORDER BY machine_code");
 $machines = $stmt->fetchAll();
 
+
 // Get report data based on type
 $reportData = [];
 $summary = [];
@@ -245,7 +246,7 @@ if ($machineId > 0) {
                 </div>
             </div>
             <div class="col-lg-3 col-6">
-                <div class="small-box bg-error">
+                <div class="small-box bg-danger">
                     <div class="inner">
                         <h3><?php echo number_format($summary['max_usage'] ?? 0, 2); ?></h3>
                         <p>ค่าสูงสุด</p>
@@ -374,8 +375,8 @@ if ($machineId > 0) {
                                 <td class="text-right"><?php echo $row['records']; ?></td>
                                 <td class="text-right"><?php echo number_format($row['average'], 2); ?></td>
                                 <td class="text-right">
-                                    <?php if (isset($row['change'])): ?>
-                                    <span class="badge badge-<?php echo $row['change'] > 0 ? 'error' : ($row['change'] < 0 ? 'success' : 'secondary'); ?>">
+                                    <?php if (isset($row['change']) && $row['change'] !== null): ?>
+                                    <span class="badge badge-<?php echo $row['change'] > 0 ? 'danger' : ($row['change'] < 0 ? 'success' : 'secondary'); ?>">
                                         <?php echo $row['change'] > 0 ? '+' : ''; ?><?php echo number_format($row['change'], 2); ?>
                                     </span>
                                     <?php else: ?>
@@ -383,8 +384,8 @@ if ($machineId > 0) {
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-right">
-                                    <?php if (isset($row['change_percent'])): ?>
-                                    <span class="badge badge-<?php echo $row['change_percent'] > 0 ? 'error' : ($row['change_percent'] < 0 ? 'success' : 'secondary'); ?>">
+                                    <?php if (isset($row['change_percent']) && $row['change_percent'] !== null): ?>
+                                    <span class="badge badge-<?php echo $row['change_percent'] > 0 ? 'danger' : ($row['change_percent'] < 0 ? 'success' : 'secondary'); ?>">
                                         <?php echo $row['change_percent'] > 0 ? '+' : ''; ?><?php echo number_format($row['change_percent'], 1); ?>%
                                     </span>
                                     <?php else: ?>
@@ -483,10 +484,10 @@ function renderChart(data, type) {
     const chartConfig = {
         type: type,
         data: {
-            labels: data.labels,
+            labels: data.labels || [],
             datasets: [{
                 label: data.label || 'ปริมาณการใช้งาน',
-                data: data.values,
+                data: data.values || [],
                 borderColor: '#007bff',
                 backgroundColor: type === 'line' ? 'rgba(0, 123, 255, 0.1)' : 'rgba(0, 123, 255, 0.5)',
                 borderWidth: 2,
@@ -545,17 +546,21 @@ function exportReport() {
 function printReport() {
     window.print();
 }
+</script>
 
 <?php
+// Functions for report data
 function determineStatus($row) {
     if ($row['min_value'] && $row['max_value']) {
         if ($row['actual_value'] < $row['min_value'] || $row['actual_value'] > $row['max_value']) {
-            return ['class' => 'error', 'text' => 'ไม่ผ่าน'];
+            return ['class' => 'danger', 'text' => 'ไม่ผ่าน'];
         }
     } else {
-        $deviation = abs(($row['actual_value'] - $row['standard_value']) / $row['standard_value'] * 100);
-        if ($deviation > 10) {
-            return ['class' => 'error', 'text' => 'ไม่ผ่าน'];
+        if ($row['standard_value'] > 0) {
+            $deviation = abs(($row['actual_value'] - $row['standard_value']) / $row['standard_value'] * 100);
+            if ($deviation > 10) {
+                return ['class' => 'danger', 'text' => 'ไม่ผ่าน'];
+            }
         }
     }
     return ['class' => 'success', 'text' => 'ผ่าน'];
@@ -718,23 +723,23 @@ function getComparisonReport($db, $startDate, $endDate, $machineId, $compareWith
     // Get previous period data
     $previous = getPeriodData($db, $prevStart, $prevEnd, $machineId);
     
-    $change = $current['total_usage'] - $previous['total_usage'];
-    $changePercent = $previous['total_usage'] > 0 ? ($change / $previous['total_usage']) * 100 : 0;
+    $change = ($current['total_usage'] ?? 0) - ($previous['total_usage'] ?? 0);
+    $changePercent = ($previous['total_usage'] ?? 0) > 0 ? ($change / $previous['total_usage']) * 100 : 0;
     
     return [
         [
             'period' => 'ช่วงเวลาปัจจุบัน',
-            'usage' => $current['total_usage'],
-            'records' => $current['records'],
-            'average' => $current['avg_usage'],
+            'usage' => $current['total_usage'] ?? 0,
+            'records' => $current['records'] ?? 0,
+            'average' => $current['avg_usage'] ?? 0,
             'change' => null,
             'change_percent' => null
         ],
         [
             'period' => 'ช่วงเวลาเปรียบเทียบ',
-            'usage' => $previous['total_usage'],
-            'records' => $previous['records'],
-            'average' => $previous['avg_usage'],
+            'usage' => $previous['total_usage'] ?? 0,
+            'records' => $previous['records'] ?? 0,
+            'average' => $previous['avg_usage'] ?? 0,
             'change' => -$change,
             'change_percent' => -$changePercent
         ]
@@ -770,17 +775,17 @@ function getAverageComparison($db, $startDate, $endDate, $machineId) {
 
 function calculateComparisonSummary($data) {
     return [
-        'total_records' => $data[0]['records'] + ($data[1]['records'] ?? 0),
-        'total_usage' => $data[0]['usage'] + ($data[1]['usage'] ?? 0),
-        'avg_usage' => ($data[0]['average'] + ($data[1]['average'] ?? 0)) / 2,
-        'max_usage' => max($data[0]['usage'], $data[1]['usage'] ?? 0)
+        'total_records' => ($data[0]['records'] ?? 0) + ($data[1]['records'] ?? 0),
+        'total_usage' => ($data[0]['usage'] ?? 0) + ($data[1]['usage'] ?? 0),
+        'avg_usage' => (($data[0]['average'] ?? 0) + ($data[1]['average'] ?? 0)) / 2,
+        'max_usage' => max($data[0]['usage'] ?? 0, $data[1]['usage'] ?? 0)
     ];
 }
 
 function prepareComparisonChartData($data) {
     return [
-        'labels' => [$data[0]['period'], $data[1]['period']],
-        'values' => [$data[0]['usage'], $data[1]['usage']],
+        'labels' => [$data[0]['period'] ?? '', $data[1]['period'] ?? ''],
+        'values' => [$data[0]['usage'] ?? 0, $data[1]['usage'] ?? 0],
         'label' => 'ปริมาณการใช้งาน'
     ];
 }
@@ -840,7 +845,6 @@ function prepareStatisticsChartData($data) {
     ];
 }
 ?>
-</script>
 
 <style>
 @media print {
@@ -855,4 +859,3 @@ function prepareStatisticsChartData($data) {
     }
 }
 </style>
-
