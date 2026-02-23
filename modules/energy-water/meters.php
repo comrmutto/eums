@@ -409,7 +409,7 @@ $(document).ready(function() {
     // Initialize DataTable
     $('#metersTable').DataTable({
         language: {
-            url: '//cdn.datatables.net/plug-ins/1.10.21/i18n/Thai.json'
+            url: 'https://cdn.datatables.net/plug-ins/1.10.21/i18n/Thai.json'
         },
         pageLength: 25,
         order: [[2, 'asc']],
