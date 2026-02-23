@@ -88,15 +88,35 @@ foreach ($rawRecords as $row) {
 // BUILD EXCEL — matching energy_water-record.xlsx exactly
 // ============================================================
 
-// Meter code => [READ_col, TOTAL/DAY_col]
-$meterCols = [
-    'MDB1'    => ['C', 'D'],
-    'MDB2'    => ['E', 'F'],
-    'MDB3'    => ['G', 'H'],
-    'SUBMDB4' => ['I', 'J'],
-    'SUBMDB5' => ['K', 'L'],
-    'WATER'   => ['M', 'N'],
-];
+// ดึง meter_code จริงจาก DB เพื่อสร้าง column mapping
+// เรียงลำดับเหมือนกับที่ query ดึงข้อมูล (meter_type DESC, meter_code ASC)
+$meterStmt = $db->query("
+    SELECT meter_code, meter_name, meter_type
+    FROM mc_mdb_water
+    WHERE status = 1
+    ORDER BY meter_type DESC, meter_code ASC
+");
+$meterList = $meterStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// สร้าง column letter list
+$colLetters = [];
+for ($i = 1; $i <= 26; $i++) $colLetters[] = chr(64 + $i);
+for ($i = 1; $i <= 26; $i++) for ($j = 1; $j <= 26; $j++) $colLetters[] = chr(64+$i).chr(64+$j);
+
+// map: meter_code => [readCol, totalCol, meter_name, meter_type]
+// เริ่มที่ C (index 2 ใน 0-based)
+$meterCols = [];
+$colIdx = 2;
+foreach ($meterList as $m) {
+    $meterCols[$m['meter_code']] = [
+        $colLetters[$colIdx],      // READ col
+        $colLetters[$colIdx + 1],  // TOTAL/DAY col
+        $m['meter_name'],
+        $m['meter_type'],
+    ];
+    $colIdx += 2;
+}
+$lastColLetter = $colLetters[$colIdx - 1];
 
 $firstDay    = date('Y-m-01', strtotime($start_date));
 $daysInMonth = (int)date('t', strtotime($firstDay));
@@ -108,20 +128,12 @@ $sheet->setTitle('MDB DIARY REPORT');
 $spreadsheet->getDefaultStyle()->getFont()->setName('Arial')->setSize(10);
 
 // ---- COLUMN WIDTHS ----
-$sheet->getColumnDimension('A')->setWidth(18.86);
-$sheet->getColumnDimension('B')->setWidth(13.0);
-$sheet->getColumnDimension('C')->setWidth(31.0);
-$sheet->getColumnDimension('D')->setWidth(13.0);
-$sheet->getColumnDimension('E')->setWidth(31.0);
-$sheet->getColumnDimension('F')->setWidth(13.0);
-$sheet->getColumnDimension('G')->setWidth(13.0);
-$sheet->getColumnDimension('H')->setWidth(13.0);
-$sheet->getColumnDimension('I')->setWidth(13.0);
-$sheet->getColumnDimension('J')->setWidth(13.0);
-$sheet->getColumnDimension('K')->setWidth(13.0);
-$sheet->getColumnDimension('L')->setWidth(13.0);
-$sheet->getColumnDimension('M')->setWidth(13.0);
-$sheet->getColumnDimension('N')->setWidth(13.0);
+$sheet->getColumnDimension('A')->setWidth(13.0);  // DATE
+$sheet->getColumnDimension('B')->setWidth(9.0);   // TIME
+foreach ($meterCols as $code => [$readCol, $totalCol, $meterName, $meterType]) {
+    $sheet->getColumnDimension($readCol)->setWidth(14.0);
+    $sheet->getColumnDimension($totalCol)->setWidth(12.0);
+}
 
 $thin   = Border::BORDER_THIN;
 $none   = Border::BORDER_NONE;
@@ -132,37 +144,45 @@ $allThin = [
 // ============================================================
 // ROW 1 — Title bar
 // ============================================================
-$sheet->getRowDimension(1)->setRowHeight(27.0);
+$sheet->getRowDimension(1)->setRowHeight(20.0);
 
 $sheet->setCellValue('A1', 'ELECTRIC POWER MDB DIARY REPORT 1');
 $sheet->getStyle('A1')->applyFromArray([
-    'font'    => ['bold' => true, 'size' => 24, 'name' => 'Arial'],
+    'font'    => ['bold' => true, 'size' => 14, 'name' => 'Arial'],
     'borders' => ['bottom' => ['borderStyle' => $thin]],
 ]);
 
-$sheet->mergeCells('G1:H1');
-$sheet->setCellValue('G1', 'MONTH   ' . $monthLabel);
-$sheet->getStyle('G1:H1')->applyFromArray([
-    'font'      => ['bold' => true, 'size' => 24, 'name' => 'Arial'],
+// MONTH — กึ่งกลาง sheet (ใช้คอลัมน์ที่ 4 จากซ้าย)
+$midCode    = array_keys($meterCols)[intdiv(count($meterCols), 2)] ?? array_key_first($meterCols);
+$midReadCol = $meterCols[$midCode][0];
+$midTotCol  = $meterCols[$midCode][1];
+$sheet->mergeCells("{$midReadCol}1:{$midTotCol}1");
+$sheet->setCellValue("{$midReadCol}1", 'MONTH   ' . $monthLabel);
+$sheet->getStyle("{$midReadCol}1:{$midTotCol}1")->applyFromArray([
+    'font'      => ['bold' => true, 'size' => 11, 'name' => 'Arial'],
     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
     'borders'   => ['bottom' => ['borderStyle' => $thin]],
 ]);
 
-$sheet->setCellValue('J1', 'CHECK BY……………..APPROVE…………………..'); 
-$sheet->getStyle('J1')->applyFromArray([
-    'font' => ['bold' => true, 'size' => 24, 'name' => 'Arial'],
+// CHECK BY / APPROVE — คอลัมน์สุดท้าย
+$lastCodes   = array_keys($meterCols);
+$lastCode    = end($lastCodes);
+$checkCol    = $meterCols[$lastCode][0];
+$sheet->setCellValue("{$checkCol}1", 'CHECK BY……………..APPROVE…………………..'); 
+$sheet->getStyle("{$checkCol}1")->applyFromArray([
+    'font' => ['bold' => true, 'size' => 10, 'name' => 'Arial'],
 ]);
 
 // ============================================================
-// ROW 2 — Group headers
+// ROW 2 — Group headers (meter name)
 // ============================================================
-$sheet->getRowDimension(2)->setRowHeight(37.5);
+$sheet->getRowDimension(2)->setRowHeight(25.0);
 
 // DATE spans A2:A4
 $sheet->mergeCells('A2:A4');
 $sheet->setCellValue('A2', 'DATE');
 $sheet->getStyle('A2:A4')->applyFromArray([
-    'font'      => ['bold' => true, 'size' => 26, 'name' => 'Arial'],
+    'font'      => ['bold' => true, 'size' => 11, 'name' => 'Arial'],
     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER,
                     'vertical'   => Alignment::VERTICAL_CENTER],
     'borders'   => $allThin['borders'],
@@ -172,7 +192,7 @@ $sheet->getStyle('A2:A4')->applyFromArray([
 $sheet->mergeCells('B2:B3');
 $sheet->setCellValue('B2', 'ITEM');
 $sheet->getStyle('B2:B3')->applyFromArray([
-    'font'      => ['bold' => true, 'size' => 26, 'name' => 'Arial'],
+    'font'      => ['bold' => true, 'size' => 11, 'name' => 'Arial'],
     'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT,
                     'vertical'   => Alignment::VERTICAL_BOTTOM],
     'borders'   => ['top'   => ['borderStyle' => $thin],
@@ -180,70 +200,54 @@ $sheet->getStyle('B2:B3')->applyFromArray([
                     'right' => ['borderStyle' => $thin]],
 ]);
 
-// Group header cells
-$groups = [
-    'C2:D2' => 'MDB1 3P 4W 400/230V',
-    'E2:F2' => 'MDB2 3P 3W 210V',
-    'G2:H2' => 'MDB3 3P 4W 400/230V',
-    'I2:J2' => 'Sub MDB4 (Water plant1)',
-    'K2:L2' => 'Sub MDB5 (Water plant2)',
-    'M2:N2' => ' Input Water (m3)',
-];
-foreach ($groups as $range => $label) {
-    $sheet->mergeCells($range);
-    $sheet->setCellValue(explode(':', $range)[0], $label);
-    $sheet->getStyle($range)->applyFromArray([
-        'font'      => ['bold' => true, 'size' => 26, 'name' => 'Arial'],
+// Group header: meter_name (row 2)
+foreach ($meterCols as $code => [$readCol, $totalCol, $meterName, $meterType]) {
+    $sheet->mergeCells("{$readCol}2:{$totalCol}2");
+    $sheet->setCellValue("{$readCol}2", $meterName);
+    $sheet->getStyle("{$readCol}2:{$totalCol}2")->applyFromArray([
+        'font'      => ['bold' => true, 'size' => 10, 'name' => 'Arial'],
         'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER,
-                        'vertical'   => Alignment::VERTICAL_CENTER],
+                        'vertical'   => Alignment::VERTICAL_CENTER,
+                        'wrapText'   => true],
         'borders'   => $allThin['borders'],
     ]);
 }
 
 // ============================================================
-// ROW 3 — Sub-group headers Energy / Water
+// ROW 3 — Sub-group: Energy (kWh) / Water (m3)
 // ============================================================
-$sheet->getRowDimension(3)->setRowHeight(47.25);
+$sheet->getRowDimension(3)->setRowHeight(20.0);
 
-$subGroups = [
-    'C3:D3' => 'Energy (kWh)',
-    'E3:F3' => 'Energy (kWh)',
-    'G3:H3' => 'Energy (kWh)',
-    'I3:J3' => 'Energy (kWh)',
-    'K3:L3' => 'Energy (kWh)',
-    'M3:N3' => 'Water (m3)',
-];
-foreach ($subGroups as $range => $label) {
-    $sheet->mergeCells($range);
-    $sheet->setCellValue(explode(':', $range)[0], $label);
-    $sheet->getStyle($range)->applyFromArray([
-        'font'      => ['bold' => true, 'size' => 26, 'name' => 'Arial'],
+foreach ($meterCols as $code => [$readCol, $totalCol, $meterName, $meterType]) {
+    $unitLabel = ($meterType === 'electricity') ? 'Energy (kWh)' : 'Water (m3)';
+    $sheet->mergeCells("{$readCol}3:{$totalCol}3");
+    $sheet->setCellValue("{$readCol}3", $unitLabel);
+    $sheet->getStyle("{$readCol}3:{$totalCol}3")->applyFromArray([
+        'font'      => ['bold' => true, 'size' => 10, 'name' => 'Arial'],
         'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER,
                         'vertical'   => Alignment::VERTICAL_CENTER],
         'borders'   => ['left'   => ['borderStyle' => $thin],
                         'top'    => ['borderStyle' => $thin],
                         'bottom' => ['borderStyle' => $thin]],
     ]);
-    // right border on second col of each pair
-    $endCell = explode(':', $range)[1];
-    $sheet->getStyle("{$endCell}3")->applyFromArray([
+    $sheet->getStyle("{$totalCol}3")->applyFromArray([
         'borders' => ['right' => ['borderStyle' => $thin]],
     ]);
 }
-// B3 side borders (continuation of ITEM merge)
+// B3 side borders
 $sheet->getStyle('B3')->applyFromArray([
     'borders' => ['left'  => ['borderStyle' => $thin],
                   'right' => ['borderStyle' => $thin]],
 ]);
 
 // ============================================================
-// ROW 4 — Column detail headers: TIME, READ, TOTAL/DAY
+// ROW 4 — TIME, READ, TOTAL/DAY
 // ============================================================
-$sheet->getRowDimension(4)->setRowHeight(33.75);
+$sheet->getRowDimension(4)->setRowHeight(18.0);
 
 $sheet->setCellValue('B4', 'TIME');
 $sheet->getStyle('B4')->applyFromArray([
-    'font'      => ['bold' => true, 'size' => 26, 'name' => 'Arial'],
+    'font'      => ['bold' => true, 'size' => 10, 'name' => 'Arial'],
     'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT,
                     'vertical'   => Alignment::VERTICAL_CENTER],
     'borders'   => $allThin['borders'],
@@ -255,16 +259,17 @@ $sheet->getStyle('A4')->applyFromArray([
                   'bottom' => ['borderStyle' => $thin]],
 ]);
 
-$detailCols = ['C4'=>'READ','D4'=>'TOTAL/DAY',
-               'E4'=>'READ','F4'=>'TOTAL/DAY',
-               'G4'=>'READ','H4'=>'TOTAL/DAY',
-               'I4'=>'READ','J4'=>'TOTAL/DAY',
-               'K4'=>'READ','L4'=>'TOTAL/DAY',
-               'M4'=>'READ','N4'=>'TOTAL/DAY'];
-foreach ($detailCols as $cell => $label) {
-    $sheet->setCellValue($cell, $label);
-    $sheet->getStyle($cell)->applyFromArray([
-        'font'      => ['bold' => true, 'size' => 26, 'name' => 'Arial'],
+foreach ($meterCols as $code => [$readCol, $totalCol]) {
+    $sheet->setCellValue("{$readCol}4", 'READ');
+    $sheet->getStyle("{$readCol}4")->applyFromArray([
+        'font'      => ['bold' => true, 'size' => 10, 'name' => 'Arial'],
+        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER,
+                        'vertical'   => Alignment::VERTICAL_CENTER],
+        'borders'   => $allThin['borders'],
+    ]);
+    $sheet->setCellValue("{$totalCol}4", 'TOTAL/DAY');
+    $sheet->getStyle("{$totalCol}4")->applyFromArray([
+        'font'      => ['bold' => true, 'size' => 10, 'name' => 'Arial'],
         'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER,
                         'vertical'   => Alignment::VERTICAL_CENTER],
         'borders'   => $allThin['borders'],
@@ -285,14 +290,14 @@ for ($d = 1; $d <= $daysInMonth; $d++) {
     $rowD = $baseRow + ($d - 1) * 2;   // 09:00
     $rowN = $rowD + 1;                  // 24:00
 
-    $sheet->getRowDimension($rowD)->setRowHeight(51.0);
-    $sheet->getRowDimension($rowN)->setRowHeight(51.0);
+    $sheet->getRowDimension($rowD)->setRowHeight(20.0);
+    $sheet->getRowDimension($rowN)->setRowHeight(20.0);
 
     // -- A: DATE merged over 2 rows
     $sheet->mergeCells("A{$rowD}:A{$rowN}");
     $sheet->setCellValue("A{$rowD}", $dispDate);
     $sheet->getStyle("A{$rowD}:A{$rowN}")->applyFromArray([
-        'font'      => ['bold' => true, 'size' => 28, 'name' => 'Arial'],
+        'font'      => ['bold' => true, 'size' => 10, 'name' => 'Arial'],
         'alignment' => $centerMid,
         'borders'   => $allThin['borders'],
     ]);
@@ -301,13 +306,13 @@ for ($d = 1; $d <= $daysInMonth; $d++) {
     foreach ([[$rowD, '09:00'], [$rowN, '24:00']] as [$row, $time]) {
         $sheet->setCellValue("B{$row}", $time);
         $sheet->getStyle("B{$row}")->applyFromArray([
-            'font'      => ['bold' => true, 'size' => 28, 'name' => 'Arial'],
+            'font'      => ['bold' => true, 'size' => 10, 'name' => 'Arial'],
             'alignment' => $centerMid,
             'borders'   => $allThin['borders'],
         ]);
     }
 
-    // -- Meter columns C-N
+    // -- Meter columns
     foreach ($meterCols as $code => [$readCol, $totalCol]) {
         $readMorn  = '';
         $readEve   = '';
@@ -323,7 +328,7 @@ for ($d = 1; $d <= $daysInMonth; $d++) {
         // READ — morning (09:00 row)
         $sheet->setCellValue("{$readCol}{$rowD}", $readMorn);
         $sheet->getStyle("{$readCol}{$rowD}")->applyFromArray([
-            'font'      => ['size' => 14, 'name' => 'Arial'],
+            'font'      => ['size' => 10, 'name' => 'Arial'],
             'alignment' => $centerMid,
             'borders'   => $allThin['borders'],
         ]);
@@ -331,20 +336,18 @@ for ($d = 1; $d <= $daysInMonth; $d++) {
         // READ — evening (24:00 row)
         $sheet->setCellValue("{$readCol}{$rowN}", $readEve);
         $sheet->getStyle("{$readCol}{$rowN}")->applyFromArray([
-            'font'      => ['size' => 14, 'name' => 'Arial'],
+            'font'      => ['size' => 10, 'name' => 'Arial'],
             'alignment' => $centerMid,
             'borders'   => $allThin['borders'],
         ]);
 
-        // TOTAL/DAY — 09:00 row (value), 24:00 row (blank with border)
+        // TOTAL/DAY — merge rowD:rowN (แสดงค่าเดียวครอบ 2 แถว)
+        $sheet->mergeCells("{$totalCol}{$rowD}:{$totalCol}{$rowN}");
         $sheet->setCellValue("{$totalCol}{$rowD}", $totalDay);
-        $sheet->getStyle("{$totalCol}{$rowD}")->applyFromArray([
-            'font'      => ['size' => 14, 'name' => 'Arial'],
+        $sheet->getStyle("{$totalCol}{$rowD}:{$totalCol}{$rowN}")->applyFromArray([
+            'font'      => ['size' => 10, 'name' => 'Arial'],
             'alignment' => $centerMid,
             'borders'   => $allThin['borders'],
-        ]);
-        $sheet->getStyle("{$totalCol}{$rowN}")->applyFromArray([
-            'borders' => $allThin['borders'],
         ]);
     }
 }
