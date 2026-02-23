@@ -325,17 +325,24 @@ $chartData = $stmt->fetchAll();
                                             <td><?php echo $item['item_no']; ?></td>
                                             <td><?php echo htmlspecialchars($item['item_name']); ?></td>
                                             <td>
-                                                <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                                                    <?php foreach ($options as $option): ?>
-                                                    <label class="btn btn-outline-<?php echo $option == 'OK' ? 'success' : 'danger'; ?> btn-sm 
-                                                                          <?php echo $value == $option ? 'active' : ''; ?>">
-                                                        <input type="radio" name="enums[<?php echo $item['id']; ?>]" 
-                                                               value="<?php echo $option; ?>"
-                                                               <?php echo $value == $option ? 'checked' : ''; ?>
-                                                               autocomplete="off"> <?php echo $option; ?>
-                                                    </label>
-                                                    <?php endforeach; ?>
-                                                </div>
+                                                    <div class="btn-group" role="group">
+                                                        <?php foreach ($options as $option): ?>
+                                                        <?php $inputId = 'enum_' . $item['id'] . '_' . $option; ?>
+                                                        
+                                                        <input type="radio" class="btn-check" 
+                                                            name="enums[<?php echo $item['id']; ?>]" 
+                                                            id="<?php echo $inputId; ?>"
+                                                            value="<?php echo $option; ?>"
+                                                            <?php echo $value == $option ? 'checked' : ''; ?>
+                                                            autocomplete="off">
+                                                            
+                                                        <label class="btn btn-outline-<?php echo $option == 'OK' ? 'success' : 'danger'; ?> btn-sm" 
+                                                            for="<?php echo $inputId; ?>">
+                                                            <?php echo $option; ?>
+                                                        </label>
+                                                        
+                                                        <?php endforeach; ?>
+                                                    </div>
                                             </td>
                                         </tr>
                                         <?php endforeach; ?>
@@ -502,43 +509,33 @@ function saveAllRecords() {
         data: formData,
         dataType: 'json',
         beforeSend: function() {
-            showNotification('กำลังบันทึกข้อมูล...', 'info');
+            // แก้ไขจุดที่ 1: แจ้งเตือนกำลังบันทึก
+            toastr.info('กำลังบันทึกข้อมูล...');
         },
         success: function(response) {
             if (response.success) {
-                showNotification('บันทึกข้อมูลเรียบร้อย', 'success');
+                // แก้ไขจุดที่ 2: บันทึกสำเร็จ
+                toastr.success('บันทึกข้อมูลเรียบร้อย');
+                
                 if (response.warnings && response.warnings.length > 0) {
                     response.warnings.forEach(function(warning) {
-                        showNotification(warning, 'warning');
+                        // แก้ไขจุดที่ 3: แจ้งเตือน warning
+                        toastr.warning(warning);
                     });
                 }
                 setTimeout(function() {
                     location.reload();
                 }, 1500);
             } else {
-                showNotification(response.message, 'error');
+                // แก้ไขจุดที่ 4: บันทึกไม่สำเร็จ
+                toastr.error(response.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
             }
         },
         error: function() {
-            showNotification('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
+            // แก้ไขจุดที่ 5: ติดต่อ Server ไม่ได้
+            toastr.error('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์');
         }
     });
-}
-
-function resetForm() {
-    if (confirm('ต้องการรีเซ็ตข้อมูลทั้งหมดหรือไม่?')) {
-        $('#lpgForm')[0].reset();
-        $('.number-input').removeClass('is-valid is-invalid');
-        $('.invalid-feedback').hide();
-    }
-}
-
-function goToToday() {
-    const today = new Date();
-    const dd = String(today.getDate()).padStart(2, '0');
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const yyyy = today.getFullYear();
-    window.location.href = 'index.php?date=' + yyyy + '-' + mm + '-' + dd;
 }
 
 function updateDocument() {
@@ -551,10 +548,15 @@ function updateDocument() {
         data: formData,
         success: function(response) {
             if (response.success) {
-                showNotification('อัปเดตเอกสารเรียบร้อย', 'success');
+                // แก้ไขให้ใช้ toastr
+                toastr.success('อัปเดตเอกสารเรียบร้อย');
             } else {
-                showNotification(response.message, 'error');
+                // แก้ไขให้ใช้ toastr
+                toastr.error(response.message || 'เกิดข้อผิดพลาดในการอัปเดต');
             }
+        },
+        error: function() {
+            toastr.error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
         }
     });
 }
