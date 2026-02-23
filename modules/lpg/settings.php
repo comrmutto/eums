@@ -50,17 +50,17 @@ $items = $stmt->fetchAll();
             <div class="card-body">
                 <ul class="nav nav-tabs" id="itemTabs" role="tablist">
                     <li class="nav-item">
-                        <a class="nav-link active" id="all-tab" data-toggle="tab" href="#all" role="tab">
+                        <a class="nav-link active" id="all-tab" data-bs-toggle="tab" href="#all" role="tab">
                             ทั้งหมด
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="numbers-tab" data-toggle="tab" href="#numbers" role="tab">
+                        <a class="nav-link" id="numbers-tab" data-bs-toggle="tab" href="#numbers" role="tab">
                             แบบตัวเลข
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="enums-tab" data-toggle="tab" href="#enums" role="tab">
+                        <a class="nav-link" id="enums-tab" data-bs-toggle="tab" href="#enums" role="tab">
                             แบบ OK/NG
                         </a>
                     </li>
@@ -342,13 +342,20 @@ function saveItem() {
         success: function(response) {
             if (response.success) {
                 $('#itemModal').modal('hide');
-                showNotification('บันทึกข้อมูลเรียบร้อย', 'success');
+                // เปลี่ยนบรรทัดนี้
+                toastr.success('บันทึกข้อมูลเรียบร้อย');
+                
                 setTimeout(function() {
                     location.reload();
                 }, 1500);
             } else {
-                showNotification(response.message, 'error');
+                // เปลี่ยนบรรทัดนี้
+                toastr.error(response.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
             }
+        },
+        error: function() {
+            // ดัก Error เผื่อฝั่ง Server พัง
+            toastr.error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
         }
     });
 }
@@ -361,13 +368,19 @@ function deleteItem(id) {
             data: { id: id },
             success: function(response) {
                 if (response.success) {
-                    showNotification('ลบข้อมูลเรียบร้อย', 'success');
+                    // เปลี่ยนบรรทัดนี้
+                    toastr.success('ลบข้อมูลเรียบร้อย');
+                    
                     setTimeout(function() {
                         location.reload();
                     }, 1500);
                 } else {
-                    showNotification(response.message, 'error');
+                    // เปลี่ยนบรรทัดนี้
+                    toastr.error(response.message || 'เกิดข้อผิดพลาดในการลบข้อมูล');
                 }
+            },
+            error: function() {
+                toastr.error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
             }
         });
     }
