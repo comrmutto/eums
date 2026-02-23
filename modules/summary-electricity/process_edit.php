@@ -40,7 +40,7 @@ try {
     $record_date = isset($_POST['record_date']) ? $_POST['record_date'] : '';
     $ee_unit = isset($_POST['ee_unit']) ? (float)$_POST['ee_unit'] : 0;
     $cost_per_unit = isset($_POST['cost_per_unit']) ? (float)$_POST['cost_per_unit'] : 0;
-    $pe = isset($_POST['pe']) ? (float)$_POST['pe'] : null;
+    $pe = isset($_POST['pe']) && $_POST['pe'] !== '' ? (float)$_POST['pe'] : null;
     $remarks = isset($_POST['remarks']) ? trim($_POST['remarks']) : '';
     
     // Validate required fields
@@ -63,7 +63,6 @@ try {
     // Convert date from Thai format
     $dateObj = DateTime::createFromFormat('d/m/Y', $record_date);
     if (!$dateObj) {
-        // Try alternate format
         $dateObj = DateTime::createFromFormat('Y-m-d', $record_date);
         if (!$dateObj) {
             throw new Exception('รูปแบบวันที่ไม่ถูกต้อง (ต้องเป็น DD/MM/YYYY)');
@@ -79,10 +78,8 @@ try {
     // Begin transaction
     $db->beginTransaction();
     
-    // Check if record exists and get current data
-    $stmt = $db->prepare("
-        SELECT * FROM electricity_summary WHERE id = ? FOR UPDATE
-    ");
+    // Check if record exists
+    $stmt = $db->prepare("SELECT * FROM electricity_summary WHERE id = ? FOR UPDATE");
     $stmt->execute([$id]);
     $existingRecord = $stmt->fetch();
     
@@ -103,25 +100,19 @@ try {
         }
     }
     
-    // Calculate total cost
-    $total_cost = $ee_unit * $cost_per_unit;
-    
     // Validate PE if provided
-    if ($pe !== null && $pe !== '') {
+    if ($pe !== null) {
         if ($pe < 0 || $pe > 1) {
             throw new Exception('ค่า PE ต้องอยู่ระหว่าง 0 ถึง 1');
         }
-    } else {
-        $pe = null;
     }
     
-    // Update record
+    // Update record - ไม่ต้องอัปเดต total_cost เพราะเป็น GENERATED COLUMN
     $stmt = $db->prepare("
         UPDATE electricity_summary 
         SET record_date = ?,
             ee_unit = ?,
             cost_per_unit = ?,
-            total_cost = ?,
             pe = ?,
             remarks = ?,
             updated_at = NOW()
@@ -132,75 +123,27 @@ try {
         $record_date_db,
         $ee_unit,
         $cost_per_unit,
-        $total_cost,
         $pe,
         $remarks,
         $id
     ]);
     
     if (!$result) {
-        throw new Exception('ไม่สามารถอัปเดตข้อมูลได้');
+        $errorInfo = $stmt->errorInfo();
+        throw new Exception('ไม่สามารถอัปเดตข้อมูลได้: ' . ($errorInfo[2] ?? 'Unknown error'));
     }
     
-    // Check for anomalies after update
-    $warnings = [];
-    
-    // Check if usage is unusually high or low compared to month average
-    $month = $dateObj->format('m');
-    $year = $dateObj->format('Y');
-    
-    $stmt = $db->prepare("
-        SELECT 
-            AVG(ee_unit) as avg_daily,
-            STDDEV(ee_unit) as stddev_daily
-        FROM electricity_summary
-        WHERE MONTH(record_date) = ? AND YEAR(record_date) = ?
-        AND id != ?
-    ");
-    $stmt->execute([$month, $year, $id]);
-    $stats = $stmt->fetch();
-    
-    if ($stats && $stats['avg_daily'] > 0 && $stats['stddev_daily'] > 0) {
-        $z_score = abs($ee_unit - $stats['avg_daily']) / $stats['stddev_daily'];
-        
-        if ($z_score > 2) {
-            $warnings[] = "หน่วยไฟฟ้าวันนี้สูง/ต่ำกว่าค่าเฉลี่ยค่อนข้างมาก (ค่าเบี่ยงเบนมาตรฐาน: " . number_format($z_score, 2) . ")";
-        }
-    }
-    
-    // Compare with same day last year if available
-    $lastYear = $year - 1;
-    $stmt = $db->prepare("
-        SELECT ee_unit FROM electricity_summary
-        WHERE DAY(record_date) = ? AND MONTH(record_date) = ? AND YEAR(record_date) = ?
-    ");
-    $stmt->execute([$dateObj->format('d'), $month, $lastYear]);
-    $lastYearData = $stmt->fetch();
-    
-    if ($lastYearData) {
-        $change = (($ee_unit - $lastYearData['ee_unit']) / $lastYearData['ee_unit']) * 100;
-        if (abs($change) > 30) {
-            $warnings[] = "หน่วยไฟฟ้าเปลี่ยนแปลงจากปีที่แล้ว " . number_format($change, 1) . "%";
-        }
-    }
-    
-    // Check for significant change from previous value
-    if ($existingRecord['ee_unit'] > 0) {
-        $changeFromPrev = (($ee_unit - $existingRecord['ee_unit']) / $existingRecord['ee_unit']) * 100;
-        if (abs($changeFromPrev) > 50) {
-            $warnings[] = "หน่วยไฟฟ้าเปลี่ยนแปลงจากบันทึกเดิม " . number_format($changeFromPrev, 1) . "%";
-        }
-    }
+    // ดึงข้อมูลที่อัปเดต
+    $stmt = $db->prepare("SELECT * FROM electricity_summary WHERE id = ?");
+    $stmt->execute([$id]);
+    $updatedRecord = $stmt->fetch();
     
     // Commit transaction
     $db->commit();
     
     // Log activity
-    $logMessage = "Updated summary record ID: $id, Date: $record_date_db, EE: $ee_unit, Cost: $total_cost";
-    if (!empty($warnings)) {
-        $logMessage .= " (Warnings: " . implode('; ', $warnings) . ")";
-    }
-    logActivity($_SESSION['user_id'], 'edit_summary_record', $logMessage);
+    logActivity($_SESSION['user_id'], 'edit_summary_record', 
+               "Edited summary record ID: $id, Date: $record_date_db, EE: $ee_unit");
     
     // Prepare response
     $response = [
@@ -210,22 +153,14 @@ try {
             'id' => $id,
             'record_date' => $record_date_db,
             'ee_unit' => $ee_unit,
-            'total_cost' => $total_cost
+            'total_cost' => $updatedRecord['total_cost']
         ]
     ];
-    
-    if (!empty($warnings)) {
-        $response['warnings'] = $warnings;
-        $response['message'] .= ' (มีคำเตือน)';
-    }
     
     if ($isAjax) {
         echo json_encode($response, JSON_UNESCAPED_UNICODE);
     } else {
         $_SESSION['success'] = $response['message'];
-        if (!empty($warnings)) {
-            $_SESSION['warning'] = implode('<br>', array_slice($warnings, 0, 3));
-        }
         header('Location: view.php?id=' . $id);
     }
     
@@ -235,7 +170,6 @@ try {
         $db->rollBack();
     }
     
-    // Log error
     error_log("Error in summary process_edit.php: " . $e->getMessage());
     
     if ($isAjax) {
