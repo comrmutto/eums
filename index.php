@@ -3,7 +3,7 @@
  * EUMS - Main Dashboard Page
  * Engineering Utility Monitoring System
  */
-
+date_default_timezone_set('Asia/Bangkok');
 // Set page title
 $pageTitle = 'แดชบอร์ดหลัก';
 
