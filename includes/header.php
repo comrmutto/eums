@@ -82,6 +82,11 @@ $userRole = $_SESSION['user_role'] ?? 'viewer';
         }
         .main-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            /* สำคัญ: ต้องไม่มี overflow:hidden เพื่อให้ dropdown แสดงได้ */
+            overflow: visible !important;
+        }
+        .main-header .navbar {
+            overflow: visible !important;
         }
         .navbar-nav .nav-link {
             color: rgba(255,255,255,0.8) !important;
@@ -89,21 +94,56 @@ $userRole = $_SESSION['user_role'] ?? 'viewer';
         .navbar-nav .nav-link:hover {
             color: white !important;
         }
-        .user-menu .dropdown-toggle::after {
-            color: white;
+
+        /* ===== User Dropdown Menu ===== */
+        .user-dropdown-menu {
+            /* ให้ dropdown ลอยออกมาถูกต้องแม้ navbar มี overflow */
+            position: absolute !important;
+            z-index: 9999 !important;
+            right: 0 !important;
+            left: auto !important;
+            top: 100% !important;
+            margin-top: 4px !important;
+            border: none !important;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.18) !important;
+            border-radius: 12px !important;
+            overflow: hidden !important;
+            padding: 0 !important;
+            background: #fff !important;
         }
+        .user-dropdown-menu .dropdown-item {
+            color: #333 !important;
+        }
+        .user-dropdown-menu .dropdown-item:hover {
+            background-color: #f0f2ff !important;
+            color: #667eea !important;
+        }
+
+        /* ===== Notification Dropdown ===== */
+        .nav-item.dropdown .dropdown-menu {
+            z-index: 9999 !important;
+            background-color: #fff !important;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15) !important;
+            border: none !important;
+            border-radius: 12px !important;
+        }
+        .nav-item.dropdown .dropdown-menu .dropdown-item {
+            color: #333 !important;
+        }
+        .nav-item.dropdown .dropdown-menu .dropdown-item:hover {
+            background-color: #f8f9fa !important;
+        }
+
         /* แก้ปัญหา Datetimepicker (BS4) แสดงผลไม่เต็มกรอบใน Bootstrap 5 */
         .bootstrap-datetimepicker-widget.dropdown-menu {
             width: auto !important;
-            min-width: 330px !important; /* บังคับให้ความกว้างขั้นต่ำครอบคลุมวันทั้ง 7 วันพอดี */
+            min-width: 330px !important;
             padding: 10px !important;
         }
-
         .bootstrap-datetimepicker-widget.dropdown-menu table {
             width: 100% !important;
             margin: 0 !important;
         }
-
         .bootstrap-datetimepicker-widget.dropdown-menu table td,
         .bootstrap-datetimepicker-widget.dropdown-menu table th {
             border-radius: 0;
@@ -133,10 +173,11 @@ $userRole = $_SESSION['user_role'] ?? 'viewer';
         </ul>
 
         <!-- Right navbar links -->
+    
         <ul class="navbar-nav ml-auto">
             <!-- Notifications Dropdown -->
             <li class="nav-item dropdown">
-                <a class="nav-link" data-toggle="dropdown" href="#">
+                <a class="nav-link" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">
                     <i class="far fa-bell"></i>
                     <span class="badge badge-warning navbar-badge" id="notificationCount">0</span>
                 </a>
@@ -155,48 +196,39 @@ $userRole = $_SESSION['user_role'] ?? 'viewer';
             
             <!-- User Menu -->
             <li class="nav-item dropdown user-menu">
-                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">
+                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" data-bs-offset="0,4" role="button" aria-expanded="false">
                     <i class="fas fa-user-circle fa-2x"></i>
                     <span class="d-none d-md-inline"><?php echo htmlspecialchars($currentUser); ?></span>
                 </a>
-                <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-                    <!-- User image -->
-                    <li class="user-header bg-primary">
-                        <i class="fas fa-user-circle fa-4x"></i>
-                        <p>
-                            <?php echo htmlspecialchars($currentUser); ?>
-                            <small>สมาชิกตั้งแต่: <?php echo date('d/m/Y'); ?></small>
-                        </p>
-                    </li>
-                    <!-- Menu Body -->
-                    <li class="user-body">
-                        <div class="row">
-                            <div class="col-4 text-center">
-                                <a href="#">โปรไฟล์</a>
-                            </div>
-                            <div class="col-4 text-center">
-                                <a href="#">ตั้งค่า</a>
-                            </div>
-                            <div class="col-4 text-center">
-                                <a href="#">รายงาน</a>
-                            </div>
-                        </div>
-                    </li>
-                    <!-- Menu Footer-->
-                    <li class="user-footer">
-                        <a href="#" class="btn btn-default btn-flat">โปรไฟล์</a>
-                        <a href="/eums/logout.php" class="btn btn-default btn-flat float-right">
-                            <i class="fas fa-sign-out-alt"></i> ออกจากระบบ
+                <div class="dropdown-menu dropdown-menu-end user-dropdown-menu" style="min-width:260px; right:0; left:auto;">
+                    <!-- User Header -->
+                    <div class="user-header" style="background: linear-gradient(135deg,#667eea,#764ba2); padding:15px; text-align:center; color:#fff;">
+                        <i class="fas fa-user-circle fa-4x mb-2"></i>
+                        <p class="mb-0 fw-bold"><?php echo htmlspecialchars($currentUser); ?></p>
+                        <small style="opacity:.8;">สมาชิกตั้งแต่: <?php echo date('d/m/Y'); ?></small>
+                    </div>
+                    <!-- Quick Links -->
+                    <div class="d-flex border-bottom">
+                        <a href="/eums/settings/profile.php" class="dropdown-item text-center border-end py-2" style="font-size:.85rem;">
+                            <i class="fas fa-user d-block mb-1"></i>โปรไฟล์
                         </a>
-                    </li>
-                </ul>
-            </li>
-            
-            <!-- Control Sidebar Toggle Button -->
-            <li class="nav-item">
-                <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" role="button">
-                    <i class="fas fa-th-large"></i>
-                </a>
+                        <a href="/eums/settings/users.php" class="dropdown-item text-center border-end py-2" style="font-size:.85rem;">
+                            <i class="fas fa-cog d-block mb-1"></i>ตั้งค่า
+                        </a>
+                        <a href="/eums/reports/daily.php" class="dropdown-item text-center py-2" style="font-size:.85rem;">
+                            <i class="fas fa-chart-bar d-block mb-1"></i>รายงาน
+                        </a>
+                    </div>
+                    <!-- Footer -->
+                    <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background:#f8f9fa;">
+                        <a href="/eums/settings/profile.php" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-user me-1"></i>โปรไฟล์
+                        </a>
+                        <a href="/eums/logout.php" class="btn btn-sm btn-outline-danger">
+                            <i class="fas fa-sign-out-alt me-1"></i>ออกจากระบบ
+                        </a>
+                    </div>
+                </div>
             </li>
         </ul>
     </nav>

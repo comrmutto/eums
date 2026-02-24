@@ -631,4 +631,12 @@ function generatePagination($currentPage, $totalPages, $urlPattern) {
     
     return $html;
 }
+function translate($key, $lang = null) {
+    if (!$lang) {
+        $lang = $_SESSION['language'] ?? 'th';
+    }
+    
+    $translations = include __DIR__ . "/../lang/{$lang}.php";
+    return $translations[$key] ?? $key;
+}
 ?>

@@ -15,63 +15,7 @@
         </div>
         <strong>Copyright &copy; <?php echo date('Y'); ?> <?php echo $appName ?? 'EUMS'; ?>.</strong> All rights reserved.
     </footer>
-    
-    <!-- Control Sidebar -->
-    <aside class="control-sidebar control-sidebar-dark">
-        <div class="p-3">
-            <h5>ตั้งค่า</h5>
-            <hr class="mb-2">
-            
-            <!-- Theme Settings -->
-            <div class="form-group">
-                <label>ธีม</label>
-                <select class="form-control form-control-sm" id="themeSelector">
-                    <option value="light">สว่าง</option>
-                    <option value="dark">มืด</option>
-                    <option value="blue">น้ำเงิน</option>
-                </select>
-            </div>
-            
-            <!-- Font Size -->
-            <div class="form-group">
-                <label>ขนาดตัวอักษร</label>
-                <select class="form-control form-control-sm" id="fontSizeSelector">
-                    <option value="14px">เล็ก</option>
-                    <option value="16px" selected>ปกติ</option>
-                    <option value="18px">ใหญ่</option>
-                </select>
-            </div>
-            
-            <!-- Refresh Interval -->
-            <div class="form-group">
-                <label>รีเฟรชอัตโนมัติ</label>
-                <select class="form-control form-control-sm" id="refreshInterval">
-                    <option value="0">ปิด</option>
-                    <option value="300000">5 นาที</option>
-                    <option value="600000">10 นาที</option>
-                    <option value="900000">15 นาที</option>
-                </select>
-            </div>
-            
-            <hr>
-            
-            <!-- Module Settings -->
-            <h6>การแสดงผลโมดูล</h6>
-            <?php foreach (config('modules') as $key => $module): ?>
-                <?php if ($module['enabled']): ?>
-                    <div class="form-check">
-                        <input class="form-check-input module-toggle" type="checkbox" 
-                               id="module_<?php echo $key; ?>" 
-                               data-module="<?php echo $key; ?>" 
-                               checked>
-                        <label class="form-check-label" for="module_<?php echo $key; ?>">
-                            <?php echo $module['name']; ?>
-                        </label>
-                    </div>
-                <?php endif; ?>
-            <?php endforeach; ?>
-        </div>
-    </aside>
+
     
 </div>
 <!-- ./wrapper -->
@@ -132,81 +76,7 @@
 <?php if (isset($page_js)): ?>
     <script src="/eums/assets/js/pages/<?php echo $page_js; ?>"></script>
 <?php endif; ?>
-
-<!-- Custom inline scripts -->
-<script>
-    // ตรวจสอบว่า jQuery โหลดหรือไม่
-    if (typeof jQuery === 'undefined') {
-        console.error('jQuery is not loaded!');
-        document.write('<div class="alert alert-danger">เกิดข้อผิดพลาด: jQuery ไม่สามารถโหลดได้ กรุณารีเฟรชหน้า</div>');
-    } else {
-        console.log('jQuery loaded successfully');
-        
-        // Set moment locale to Thai
-        moment.locale('th');
-        
-        // Toastr configuration
-        toastr.options = {
-            "closeButton": true,
-            "debug": false,
-            "newestOnTop": true,
-            "progressBar": true,
-            "positionClass": "toast-top-right",
-            "preventDuplicates": false,
-            "onclick": null,
-            "showDuration": "300",
-            "hideDuration": "1000",
-            "timeOut": "5000",
-            "extendedTimeOut": "1000",
-            "showEasing": "swing",
-            "hideEasing": "linear",
-            "showMethod": "fadeIn",
-            "hideMethod": "fadeOut"
-        };
-        
-        // Auto refresh functionality
-        let refreshInterval;
-        $('#refreshInterval').on('change', function() {
-            if (refreshInterval) {
-                clearInterval(refreshInterval);
-            }
-            
-            const interval = parseInt($(this).val());
-            if (interval > 0) {
-                refreshInterval = setInterval(function() {
-                    $('#refreshData').click();
-                }, interval);
-            }
-        });
-        
-        // Theme switcher
-        $('#themeSelector').on('change', function() {
-            const theme = $(this).val();
-            $('body').attr('data-theme', theme);
-            localStorage.setItem('eums_theme', theme);
-        });
-        
-        // Font size switcher
-        $('#fontSizeSelector').on('change', function() {
-            const size = $(this).val();
-            $('body').css('font-size', size);
-            localStorage.setItem('eums_fontSize', size);
-        });
-        
-        // Load saved preferences
-        $(document).ready(function() {
-            const savedTheme = localStorage.getItem('eums_theme');
-            if (savedTheme) {
-                $('#themeSelector').val(savedTheme).trigger('change');
-            }
-            
-            const savedFontSize = localStorage.getItem('eums_fontSize');
-            if (savedFontSize) {
-                $('#fontSizeSelector').val(savedFontSize).trigger('change');
-            }
-        });
-    }
-</script>
+>
 
 </body>
 </html>

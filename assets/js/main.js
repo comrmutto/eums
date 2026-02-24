@@ -502,16 +502,10 @@ if (typeof jQuery === 'undefined') {
          * Initialize tooltips
          */
         initTooltips: function() {
-            if (typeof $.fn.tooltip === 'undefined') {
-                console.warn('Bootstrap tooltip not loaded');
-                return;
-            }
-            
             try {
-                $('[data-toggle="tooltip"]').tooltip({
-                    trigger: 'hover',
-                    placement: 'top'
-                });
+                // Bootstrap 5 — ใช้ querySelectorAll แทน jQuery
+                const tooltipEls = document.querySelectorAll('[data-bs-toggle="tooltip"], [data-toggle="tooltip"]');
+                tooltipEls.forEach(el => new bootstrap.Tooltip(el, { trigger: 'hover', placement: 'top' }));
             } catch (e) {
                 console.error('Error initializing tooltips:', e);
             }
@@ -521,15 +515,9 @@ if (typeof jQuery === 'undefined') {
          * Initialize popovers
          */
         initPopovers: function() {
-            if (typeof $.fn.popover === 'undefined') {
-                return;
-            }
-            
             try {
-                $('[data-toggle="popover"]').popover({
-                    trigger: 'click',
-                    html: true
-                });
+                const popoverEls = document.querySelectorAll('[data-bs-toggle="popover"], [data-toggle="popover"]');
+                popoverEls.forEach(el => new bootstrap.Popover(el, { trigger: 'click', html: true }));
             } catch (e) {
                 console.error('Error initializing popovers:', e);
             }
@@ -994,18 +982,30 @@ if (typeof jQuery === 'undefined') {
          * Change theme
          */
         changeTheme: function(theme) {
-            $('body').attr('data-theme', theme);
+            // ใช้ฟังก์ชัน applyThemeCSS ที่กำหนดใน footer inline script
+            if (typeof applyThemeCSS === 'function') {
+                applyThemeCSS(theme);
+            } else {
+                $('body').attr('data-theme', theme);
+            }
             this.saveUserPreferences({ theme: theme });
-            this.showNotification(`เปลี่ยนธีมเป็น ${theme === 'light' ? 'สว่าง' : 'มืด'}`, 'success');
+            const label = { light: 'สว่าง', dark: 'มืด', blue: 'น้ำเงิน' }[theme] || theme;
+            this.showNotification(`เปลี่ยนธีมเป็น "${label}" เรียบร้อย`, 'success');
         },
         
         /**
          * Change font size
          */
         changeFontSize: function(size) {
-            $('body').css('font-size', size);
+            // ใช้ฟังก์ชัน applyFontSize ที่กำหนดใน footer inline script
+            if (typeof applyFontSize === 'function') {
+                applyFontSize(size);
+            } else {
+                document.documentElement.style.fontSize = size;
+                $('body').css('font-size', size);
+            }
             this.saveUserPreferences({ fontSize: size });
-            this.showNotification(`เปลี่ยนขนาดตัวอักษร`, 'success');
+            this.showNotification('เปลี่ยนขนาดตัวอักษรเรียบร้อย', 'success');
         },
         
         /**
