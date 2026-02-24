@@ -3,9 +3,9 @@
  * Export PDF Report
  * Engineering Utility Monitoring System (EUMS)
  *
- * ต้องติดตั้ง: composer require dompdf/dompdf phpoffice/phpspreadsheet
+ * Requires: composer require dompdf/dompdf phpoffice/phpspreadsheet
  *
- * URL params: (เหมือนกับ export_report.php)
+ * URL params: (same as export_report.php)
  *   type   : daily | monthly | yearly | comparison
  *   date, month, year, period1_*, period2_*, compare_type
  */
@@ -29,14 +29,16 @@ use Dompdf\Options;
 $type = $_GET['type'] ?? 'daily';
 $db   = getDB();
 
-// ─── Thai helpers ─────────────────────────────────────────────────────────────
+// ─── Helper functions ─────────────────────────────────────────────────────────
 function thaiMonth(int $m): string {
-    return ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
-            'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'][$m];
+    return ['','January','February','March','April','May','June',
+            'July','August','September','October','November','December'][$m];
 }
+
 function fmt($v, int $d = 2): string {
     return ($v !== null && $v !== '') ? number_format((float)$v, $d) : '-';
 }
+
 function isAirOK(array $row): bool {
     $v = (float)$row['actual_value'];
     if ($row['min_value'] !== null)
@@ -44,8 +46,10 @@ function isAirOK(array $row): bool {
     $std = (float)$row['standard_value'];
     return $std === 0.0 || abs($v - $std) / $std <= 0.1;
 }
+
 function qOne($db, string $sql, array $p = []): array|false {
-    $stmt = $db->prepare($sql); $stmt->execute($p);
+    $stmt = $db->prepare($sql); 
+    $stmt->execute($p);
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
@@ -62,7 +66,7 @@ $filename = "EUMS_{$type}_" . date('Ymd_His') . '.pdf';
 
 // ─── Dompdf render ───────────────────────────────────────────────────────────
 $options = new Options();
-$options->set('defaultFont', 'DejaVu Sans');   // รองรับ UTF-8 / ภาษาไทยบางส่วน
+$options->set('defaultFont', 'DejaVu Sans');
 $options->set('isRemoteEnabled', false);
 $options->set('isHtml5ParserEnabled', true);
 $options->set('chroot', realpath(__DIR__ . '/..'));
@@ -86,13 +90,47 @@ function htmlWrap(string $title, string $period, string $body): string {
 
     return <<<HTML
     <!DOCTYPE html>
-    <html lang="th">
+    <html lang="en">
     <head>
     <meta charset="UTF-8">
     <style>
         @page { margin: 12mm 14mm; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 9pt; color: #1e1e2e; }
+
+        /* Font Awesome icon fallbacks */
+        .fas, .far, .fal { font-family: "DejaVu Sans", "Font Awesome 6 Free", sans-serif; }
+        .fa-bolt:before { content: "⚡"; }
+        .fa-water:before { content: "💧"; }
+        .fa-sun:before { content: "☀️"; }
+        .fa-moon:before { content: "🌙"; }
+        .fa-chart-line:before { content: "📈"; }
+        .fa-weight-hanging:before { content: "⚖️"; }
+        .fa-user:before { content: "👤"; }
+        .fa-fire:before { content: "🔥"; }
+        .fa-industry:before { content: "🏭"; }
+        .fa-clock:before { content: "🕐"; }
+        .fa-temperature-high:before { content: "🌡️"; }
+        .fa-gauge:before { content: "📊"; }
+        .fa-gauge-high:before { content: "📊"; }
+        .fa-check-circle:before { content: "✅"; }
+        .fa-times-circle:before { content: "❌"; }
+        .fa-money-bill-wave:before { content: "💰"; }
+        .fa-coins:before { content: "🪙"; }
+        .fa-chart-pie:before { content: "📊"; }
+        .fa-calculator:before { content: "🧮"; }
+        .fa-clipboard-list:before { content: "📋"; }
+        .fa-tag:before { content: "🏷️"; }
+        .fa-ruler:before { content: "📏"; }
+        .fa-bullseye:before { content: "🎯"; }
+        .fa-user-check:before { content: "✓"; }
+        .fa-box:before { content: "📦"; }
+        .fa-cog:before { content: "⚙️"; }
+        .fa-oil-can:before { content: "🛢️"; }
+        .fa-gas-pump:before { content: "⛽"; }
+        .fa-tint:before { content: "💧"; }
+        .fa-grip:before { content: "≡"; }
+        .fa-chart-bar:before { content: "📊"; }
 
         /* ── Header banner ── */
         .pdf-header { background: linear-gradient(135deg,#667eea,#764ba2);
@@ -117,14 +155,14 @@ function htmlWrap(string $title, string $period, string $body): string {
         .text-center { text-align:center; }
 
         /* ── Status badges ── */
-        .ok  { background:#dcfce7; color:#16a34a; padding:1px 6px;
-               border-radius:4px; font-weight:bold; font-size:8pt; }
-        .ng  { background:#fee2e2; color:#dc2626; padding:1px 6px;
-               border-radius:4px; font-weight:bold; font-size:8pt; }
-        .elec-badge { background:#fef3c7; color:#92400e; padding:1px 5px;
-               border-radius:4px; font-size:8pt; }
-        .water-badge { background:#dbeafe; color:#1e40af; padding:1px 5px;
-               border-radius:4px; font-size:8pt; }
+        .ok  { background:#dcfce7; color:#16a34a; padding:2px 8px;
+               border-radius:12px; font-weight:bold; font-size:8pt; display:inline-block; }
+        .ng  { background:#fee2e2; color:#dc2626; padding:2px 8px;
+               border-radius:12px; font-weight:bold; font-size:8pt; display:inline-block; }
+        .elec-badge { background:#fef3c7; color:#92400e; padding:2px 8px;
+               border-radius:12px; font-size:8pt; display:inline-block; }
+        .water-badge { background:#dbeafe; color:#1e40af; padding:2px 8px;
+               border-radius:12px; font-size:8pt; display:inline-block; }
 
         /* ── Summary box ── */
         .summary-grid { display:table; width:100%; margin-bottom:8px; }
@@ -153,17 +191,21 @@ function htmlWrap(string $title, string $period, string $body): string {
         /* ── Total row ── */
         .total-row td { background:#4361ee !important; color:#fff !important;
             font-weight:bold; }
+            
+        /* ── Module headers ── */
+        .module-header { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+        .module-badge { padding:4px 10px; border-radius:20px; font-size:9pt; color:white; }
     </style>
     </head>
     <body>
     <div class="pdf-header">
         <h1>{$title}</h1>
         <div class="sub">{$period}</div>
-        <div class="meta">{$app} &nbsp;|&nbsp; สร้างเมื่อ: {$generated} &nbsp;|&nbsp; โดย: {$user}</div>
+        <div class="meta">{$app} &nbsp;|&nbsp; Generated: {$generated} &nbsp;|&nbsp; By: {$user}</div>
     </div>
     {$body}
     <div class="pdf-footer">
-        Engineering Utility Monitoring System (EUMS) &mdash; {$app} &mdash; พิมพ์เมื่อ {$generated}
+        Engineering Utility Monitoring System (EUMS) &mdash; {$app} &mdash; Printed on {$generated}
     </div>
     </body>
     </html>
@@ -173,8 +215,9 @@ function htmlWrap(string $title, string $period, string $body): string {
 function sectionTitle(string $t): string {
     return "<div class=\"section-title\">$t</div>";
 }
+
 function noData(): string {
-    return '<div class="no-data">⚠️ ไม่มีข้อมูลในช่วงเวลาที่เลือก</div>';
+    return '<div class="no-data">⚠️ No data in the selected period</div>';
 }
 
 
@@ -186,11 +229,11 @@ function buildDailyHTML($db): string {
     $dateParsed = strlen($date) === 10 && strpos($date, '/') !== false
                 ? DateTime::createFromFormat('d/m/Y', $date)->format('Y-m-d')
                 : $date;
-    $thaiDate   = date('d', strtotime($dateParsed)) . ' '
+    $displayDate = date('d', strtotime($dateParsed)) . ' '
                 . thaiMonth((int)date('m', strtotime($dateParsed))) . ' '
-                . ((int)date('Y', strtotime($dateParsed)) + 543);
+                . date('Y', strtotime($dateParsed));
 
-    // ── Summary counts ────────────────────────────────────────────────────────
+    // ── Summary cards ────────────────────────────────────────────────────────
     $airSum  = qOne($db,"SELECT COUNT(*) as n, SUM(actual_value) as tot FROM air_daily_records WHERE record_date=?", [$dateParsed]);
     $engSum  = qOne($db,"SELECT SUM(CASE WHEN m.meter_type='electricity' THEN r.usage_amount ELSE 0 END) as elec,
                 SUM(CASE WHEN m.meter_type='water' THEN r.usage_amount ELSE 0 END) as water
@@ -200,17 +243,17 @@ function buildDailyHTML($db): string {
                 FROM lpg_daily_records r JOIN lpg_inspection_items i ON r.item_id=i.id WHERE r.record_date=?", [$dateParsed]);
     $elecRow = qOne($db,"SELECT ee_unit, total_cost FROM electricity_summary WHERE record_date=?", [$dateParsed]);
 
-    $body  = '<table><tr>';
+    $body = '<table style="margin-bottom:15px;"><tr>';
     $cards = [
-        ['🔵 Air Compressor', fmt($airSum['tot']), 'หน่วย', '#4361ee'],
-        ['⚡ ไฟฟ้า', fmt($engSum['elec']), 'kWh', '#f59e0b'],
-        ['💧 น้ำ', fmt($engSum['water']), 'm³', '#3b82f6'],
-        ['📊 ค่าไฟ', fmt($elecRow['total_cost'] ?? null), 'บาท', '#10b981'],
+        ['🔵 Air Compressor', fmt($airSum['tot']), 'units', '#4361ee', 'fa-compress'],
+        ['⚡ Electricity', fmt($engSum['elec']), 'kWh', '#f59e0b', 'fa-bolt'],
+        ['💧 Water', fmt($engSum['water']), 'm³', '#3b82f6', 'fa-water'],
+        ['💰 Electricity Cost', fmt($elecRow['total_cost'] ?? null), 'Baht', '#10b981', 'fa-money-bill-wave'],
     ];
-    foreach ($cards as [$label,$val,$unit,$color]) {
+    foreach ($cards as [$label,$val,$unit,$color,$icon]) {
         $body .= "<td style='padding:8px; background:{$color}11; border:1px solid {$color}44;
                     border-radius:6px; text-align:center; width:25%;'>
-                    <div style='font-size:7.5pt;color:{$color};'>{$label}</div>
+                    <div style='font-size:7.5pt;color:{$color};'><i class='fas {$icon}'></i> {$label}</div>
                     <div style='font-size:14pt;font-weight:bold;color:{$color};'>{$val}</div>
                     <div style='font-size:7.5pt;color:#9ca3af;'>{$unit}</div>
                   </td>";
@@ -219,6 +262,8 @@ function buildDailyHTML($db): string {
 
     // ── Air Compressor ────────────────────────────────────────────────────────
     $body .= sectionTitle('🔵 Air Compressor');
+    $body .= '<div class="module-header"><span class="module-badge" style="background:#4361ee;"><i class="fas fa-compress"></i> Compressor Details</span></div>';
+    
     $stmt = $db->prepare("SELECT m.machine_name, s.inspection_item, r.actual_value,
             s.standard_value, s.min_value, s.max_value, r.recorded_by
         FROM air_daily_records r JOIN mc_air m ON r.machine_id=m.id
@@ -229,30 +274,47 @@ function buildDailyHTML($db): string {
 
     if ($rows) {
         $body .= '<table><thead><tr>
-            <th>เครื่องจักร</th><th>หัวข้อตรวจสอบ</th>
-            <th class="text-right">ค่าจริง</th><th class="text-right">มาตรฐาน</th>
-            <th class="text-right">Min</th><th class="text-right">Max</th>
-            <th class="text-center">สถานะ</th><th>ผู้บันทึก</th>
+            <th><i class="fas fa-grip"></i> Machine</th>
+            <th><i class="fas fa-clipboard-list"></i> Inspection Item</th>
+            <th class="text-right"><i class="fas fa-ruler"></i> Actual</th>
+            <th class="text-right"><i class="fas fa-bullseye"></i> Standard</th>
+            <th class="text-right"><i class="fas fa-arrow-down"></i> Min</th>
+            <th class="text-right"><i class="fas fa-arrow-up"></i> Max</th>
+            <th class="text-center"><i class="fas fa-check-circle"></i> Status</th>
+            <th><i class="fas fa-user"></i> Recorded By</th>
         </tr></thead><tbody>';
+        
+        $ngCount = 0;
         foreach ($rows as $row) {
             $ok  = isAirOK($row);
+            if (!$ok) $ngCount++;
             $cls = $ok ? 'ok' : 'ng';
+            $icon = $ok ? 'fa-check-circle' : 'fa-times-circle';
             $body .= "<tr>
-                <td>{$row['machine_name']}</td>
+                <td><i class='fas fa-cog' style='color:#4361ee;'></i> {$row['machine_name']}</td>
                 <td>{$row['inspection_item']}</td>
                 <td class='text-right'>" . fmt($row['actual_value']) . "</td>
                 <td class='text-right'>" . fmt($row['standard_value']) . "</td>
                 <td class='text-right'>" . ($row['min_value'] ?? '-') . "</td>
                 <td class='text-right'>" . ($row['max_value'] ?? '-') . "</td>
-                <td class='text-center'><span class='{$cls}'>" . ($ok ? 'OK' : 'NG') . "</span></td>
-                <td>{$row['recorded_by']}</td>
+                <td class='text-center'><span class='{$cls}'><i class='fas {$icon}'></i> " . ($ok ? 'OK' : 'NG') . "</span></td>
+                <td><i class='fas fa-user-check'></i> {$row['recorded_by']}</td>
             </tr>";
         }
+        
+        // Summary row
+        $body .= "<tr style='background:#f0f9ff; border-top:2px solid #4361ee;'>
+            <td colspan='6' style='text-align:right; font-weight:bold;'><i class='fas fa-chart-pie'></i> Summary:</td>
+            <td class='text-center'><span class='ok'><i class='fas fa-check-circle'></i> OK: " . (count($rows)-$ngCount) . "</span> <span class='ng'><i class='fas fa-times-circle'></i> NG: {$ngCount}</span></td>
+            <td></td>
+        </tr>";
+        
         $body .= '</tbody></table>';
     } else { $body .= noData(); }
 
     // ── Energy & Water ────────────────────────────────────────────────────────
-    $body .= sectionTitle('⚡ Energy &amp; Water');
+    $body .= sectionTitle('⚡ Energy & Water');
+    
     $stmt = $db->prepare("SELECT m.meter_name, m.meter_type,
             r.morning_reading, r.evening_reading, r.usage_amount, r.recorded_by
         FROM meter_daily_readings r JOIN mc_mdb_water m ON r.meter_id=m.id
@@ -261,44 +323,85 @@ function buildDailyHTML($db): string {
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     if ($rows) {
+        // Module header with icons
+        $body .= '<div class="module-header">';
+        $body .= '<span class="module-badge" style="background:#f59e0b;"><i class="fas fa-bolt"></i> Electricity Meters</span>';
+        $body .= '<span class="module-badge" style="background:#3b82f6;"><i class="fas fa-water"></i> Water Meters</span>';
+        $body .= '</div>';
+        
         $body .= '<table><thead><tr>
-            <th>มิเตอร์</th><th>ประเภท</th>
-            <th class="text-right">อ่านเช้า</th><th class="text-right">อ่านเย็น</th>
-            <th class="text-right">การใช้งาน</th><th>หน่วย</th><th>ผู้บันทึก</th>
+            <th><i class="fas fa-grip"></i> Meter</th>
+            <th><i class="fas fa-tag"></i> Type</th>
+            <th class="text-right"><i class="fas fa-sun"></i> Morning</th>
+            <th class="text-right"><i class="fas fa-moon"></i> Evening</th>
+            <th class="text-right"><i class="fas fa-chart-line"></i> Usage</th>
+            <th><i class="fas fa-weight-hanging"></i> Unit</th>
+            <th><i class="fas fa-user"></i> Recorded By</th>
         </tr></thead><tbody>';
+        
         $totalElec = $totalWater = 0;
+        $elecCount = $waterCount = 0;
+        
         foreach ($rows as $row) {
             $isElec = $row['meter_type'] === 'electricity';
             $badge  = $isElec ? 'elec-badge' : 'water-badge';
-            $label  = $isElec ? 'ไฟฟ้า' : 'น้ำ';
+            $label  = $isElec ? '⚡ Electricity' : '💧 Water';
+            $icon   = $isElec ? 'fa-bolt' : 'fa-water';
             $unit   = $isElec ? 'kWh' : 'm³';
-            if ($isElec) $totalElec  += $row['usage_amount'];
-            else         $totalWater += $row['usage_amount'];
+            $color  = $isElec ? '#f59e0b' : '#3b82f6';
+            
+            if ($isElec) {
+                $totalElec += $row['usage_amount'];
+                $elecCount++;
+            } else {
+                $totalWater += $row['usage_amount'];
+                $waterCount++;
+            }
+            
             $body .= "<tr>
-                <td>{$row['meter_name']}</td>
-                <td class='text-center'><span class='{$badge}'>{$label}</span></td>
+                <td><i class='fas fa-gauge-high' style='color:{$color};'></i> {$row['meter_name']}</td>
+                <td class='text-center'><span class='{$badge}'><i class='fas {$icon}'></i> {$label}</span></td>
                 <td class='text-right'>" . fmt($row['morning_reading']) . "</td>
                 <td class='text-right'>" . fmt($row['evening_reading']) . "</td>
-                <td class='text-right'>" . fmt($row['usage_amount']) . "</td>
+                <td class='text-right'><strong>" . fmt($row['usage_amount']) . "</strong></td>
                 <td>{$unit}</td>
-                <td>{$row['recorded_by']}</td>
+                <td><i class='fas fa-user-check'></i> {$row['recorded_by']}</td>
             </tr>";
         }
-        $body .= "<tr class='total-row'>
-            <td colspan='4'>รวมไฟฟ้า</td>
-            <td class='text-right'>" . fmt($totalElec) . "</td><td>kWh</td><td>-</td>
-        </tr>
-        <tr class='total-row'>
-            <td colspan='4'>รวมน้ำ</td>
-            <td class='text-right'>" . fmt($totalWater) . "</td><td>m³</td><td>-</td>
+        
+        // Summary rows - exactly as requested in the image
+        $body .= "<tr style='background:#f0f9ff; border-top:2px solid #f59e0b;'>
+            <td colspan='4' style='text-align:right; font-weight:bold;'>
+                <i class='fas fa-calculator' style='margin-right:6px;'></i> Total Electricity ({$elecCount} meters):
+            </td>
+            <td class='text-right' style='font-weight:bold; color:#f59e0b; font-size:10pt;'>
+                " . fmt($totalElec) . " kWh
+            </td>
+            <td colspan='2'></td>
         </tr>";
+        
+        if ($waterCount > 0) {
+            $body .= "<tr style='background:#eff6ff;'>
+                <td colspan='4' style='text-align:right; font-weight:bold;'>
+                    <i class='fas fa-calculator' style='margin-right:6px;'></i> Total Water ({$waterCount} meters):
+                </td>
+                <td class='text-right' style='font-weight:bold; color:#3b82f6; font-size:10pt;'>
+                    " . fmt($totalWater) . " m³
+                </td>
+                <td colspan='2'></td>
+            </tr>";
+        }
+        
         $body .= '</tbody></table>';
     } else { $body .= noData(); }
 
     // ── LPG ──────────────────────────────────────────────────────────────────
     $body .= sectionTitle('🔴 LPG');
+    $body .= '<div class="module-header"><span class="module-badge" style="background:#dc2626;"><i class="fas fa-fire"></i> LPG Inspection</span></div>';
+    
     $stmt = $db->prepare("SELECT i.item_name, i.item_type,
-            COALESCE(r.number_value, r.enum_value) as value, r.recorded_by
+            COALESCE(r.number_value, r.enum_value) as value, r.recorded_by,
+            i.unit, i.standard_value
         FROM lpg_daily_records r JOIN lpg_inspection_items i ON r.item_id=i.id
         WHERE r.record_date=? ORDER BY i.item_no");
     $stmt->execute([$dateParsed]);
@@ -306,72 +409,182 @@ function buildDailyHTML($db): string {
 
     if ($rows) {
         $body .= '<table><thead><tr>
-            <th>รายการ</th><th>ประเภท</th><th class="text-right">ค่า / สถานะ</th><th>ผู้บันทึก</th>
+            <th><i class="fas fa-clipboard-list"></i> Item</th>
+            <th><i class="fas fa-tag"></i> Type</th>
+            <th class="text-right"><i class="fas fa-ruler"></i> Value</th>
+            <th><i class="fas fa-weight-hanging"></i> Unit</th>
+            <th class="text-right"><i class="fas fa-bullseye"></i> Standard</th>
+            <th><i class="fas fa-user"></i> Recorded By</th>
         </tr></thead><tbody>';
+        
+        $okCount = $ngCount = 0;
+        
         foreach ($rows as $row) {
-            $valHtml = $row['item_type'] === 'enum'
-                ? "<span class='" . ($row['value'] === 'OK' ? 'ok' : 'ng') . "'>{$row['value']}</span>"
+            $isEnum = $row['item_type'] === 'enum';
+            $status = '';
+            $statusClass = '';
+            
+            if ($isEnum) {
+                $status = $row['value'];
+                $statusClass = $row['value'] === 'OK' ? 'ok' : 'ng';
+                if ($row['value'] === 'OK') $okCount++;
+                else $ngCount++;
+            }
+            
+            $valHtml = $isEnum
+                ? "<span class='{$statusClass}'><i class='fas " . ($status === 'OK' ? 'fa-check-circle' : 'fa-times-circle') . "'></i> {$status}</span>"
                 : fmt($row['value']);
+            
+            $standard = $row['standard_value'] ? fmt($row['standard_value']) : '-';
+            
             $body .= "<tr>
-                <td>{$row['item_name']}</td>
-                <td class='text-center'>" . ($row['item_type'] === 'number' ? 'ตัวเลข' : 'OK/NG') . "</td>
+                <td><i class='fas fa-box' style='color:#dc2626;'></i> {$row['item_name']}</td>
+                <td class='text-center'>" . ($isEnum ? '<span class="elec-badge">OK/NG</span>' : '<span class="water-badge">Number</span>') . "</td>
                 <td class='text-right'>{$valHtml}</td>
-                <td>{$row['recorded_by']}</td>
+                <td>" . ($row['unit'] ?? '-') . "</td>
+                <td class='text-right'>{$standard}</td>
+                <td><i class='fas fa-user-check'></i> {$row['recorded_by']}</td>
             </tr>";
         }
+        
+        // Summary row
+        $body .= "<tr style='background:#fff1f0; border-top:2px solid #dc2626;'>
+            <td colspan='2' style='text-align:right; font-weight:bold;'>
+                <i class='fas fa-chart-pie'></i> Summary:
+            </td>
+            <td colspan='4'>
+                <span class='ok'><i class='fas fa-check-circle'></i> OK: {$okCount}</span>
+                <span class='ng' style='margin-left:8px;'><i class='fas fa-times-circle'></i> NG: {$ngCount}</span>
+            </td>
+        </tr>";
+        
         $body .= '</tbody></table>';
     } else { $body .= noData(); }
 
-    // ── Boiler ───────────────────────────────────────────────────────────────
-    $body .= sectionTitle('🏭 Boiler');
-    $stmt = $db->prepare("SELECT m.machine_name, r.steam_pressure,
-            r.steam_temperature, r.fuel_consumption, r.operating_hours, r.recorded_by
-        FROM boiler_daily_records r JOIN mc_boiler m ON r.machine_id=m.id
-        WHERE r.record_date=? ORDER BY m.machine_code");
-    $stmt->execute([$dateParsed]);
-    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// ── Boiler ───────────────────────────────────────────────────────────────
+$body .= sectionTitle('🏭 Boiler');
+$body .= '<div class="module-header"><span class="module-badge" style="background:#6b7280;"><i class="fas fa-industry"></i> Boiler Operations</span></div>';
 
-    if ($rows) {
-        $body .= '<table><thead><tr>
-            <th>เครื่องจักร</th>
-            <th class="text-right">แรงดัน (bar)</th>
-            <th class="text-right">อุณหภูมิ (°C)</th>
-            <th class="text-right">เชื้อเพลิง (L)</th>
-            <th class="text-right">ชั่วโมงทำงาน</th>
-            <th>ผู้บันทึก</th>
-        </tr></thead><tbody>';
-        foreach ($rows as $row) {
-            $body .= "<tr>
-                <td>{$row['machine_name']}</td>
-                <td class='text-right'>" . fmt($row['steam_pressure']) . "</td>
-                <td class='text-right'>" . fmt($row['steam_temperature'], 1) . "</td>
-                <td class='text-right'>" . fmt($row['fuel_consumption']) . "</td>
-                <td class='text-right'>" . fmt($row['operating_hours'], 1) . "</td>
-                <td>{$row['recorded_by']}</td>
-            </tr>";
-        }
-        $body .= '</tbody></table>';
-    } else { $body .= noData(); }
+$stmt = $db->prepare("SELECT m.machine_name, r.steam_pressure,
+        r.steam_temperature, r.fuel_consumption, r.operating_hours, r.recorded_by
+    FROM boiler_daily_records r JOIN mc_boiler m ON r.machine_id=m.id
+    WHERE r.record_date=? ORDER BY m.machine_code");
+$stmt->execute([$dateParsed]);
+$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+if ($rows) {
+    $body .= '<table><thead><tr>
+        <th><i class="fas fa-cog"></i> Machine</th>
+        <th class="text-right"><i class="fas fa-gauge"></i> Pressure (bar)</th>
+        <th class="text-right"><i class="fas fa-temperature-high"></i> Temp (°C)</th>
+        <th class="text-right"><i class="fas fa-oil-can"></i> Fuel (L)</th>
+        <th class="text-right"><i class="fas fa-clock"></i> Hours</th>
+        <th><i class="fas fa-user"></i> Recorded By</th>
+    </tr></thead><tbody>';
+    
+    $totalFuel = $totalHours = 0;
+    
+    foreach ($rows as $row) {
+        $totalFuel += $row['fuel_consumption'];
+        $totalHours += $row['operating_hours'];
+        
+        $body .= "<tr>
+            <td><i class='fas fa-fire' style='color:#ef4444;'></i> {$row['machine_name']}</td>
+            <td class='text-right'>" . fmt($row['steam_pressure']) . "</td>
+            <td class='text-right'>" . fmt($row['steam_temperature'], 1) . "</td>
+            <td class='text-right'><strong>" . fmt($row['fuel_consumption']) . "</strong></td>
+            <td class='text-right'>" . fmt($row['operating_hours'], 1) . "</td>
+            <td><i class='fas fa-user-check'></i> {$row['recorded_by']}</td>
+        </tr>";
+    }
+    
+    // Summary row
+    $body .= "<tr style='background:#f3f4f6; border-top:2px solid #6b7280;'>
+        <td colspan='2' style='text-align:right; font-weight:bold;'>
+            <i class='fas fa-chart-line'></i> Total:
+        </td>
+        <td class='text-right' style='font-weight:bold; color:#ef4444;'>" . fmt($totalFuel) . " L</td>
+        <td class='text-right' style='font-weight:bold; color:#3b82f6;'>" . fmt($totalHours, 1) . " hrs</td>
+        <td colspan='2'></td>
+    </tr>";
+    
+    $body .= '</tbody></table>';
+} else { $body .= noData(); }
 
     // ── Summary Electricity ───────────────────────────────────────────────────
     $body .= sectionTitle('📊 Summary Electricity');
+    $body .= '<div class="module-header"><span class="module-badge" style="background:#10b981;"><i class="fas fa-chart-bar"></i> Electrical Summary</span></div>';
+    
     $elec = qOne($db, "SELECT ee_unit, cost_per_unit, total_cost, pe, recorded_by
         FROM electricity_summary WHERE record_date=?", [$dateParsed]);
 
     if ($elec) {
-        $body .= '<table><thead><tr>
-            <th>หน่วยไฟฟ้า (kWh)</th><th>ค่าไฟ/หน่วย (บาท)</th>
-            <th>ค่าไฟรวม (บาท)</th><th>PE</th><th>ผู้บันทึก</th>
-        </tr></thead><tbody><tr>
-            <td class="text-right">' . fmt($elec['ee_unit']) . '</td>
-            <td class="text-right">' . fmt($elec['cost_per_unit'], 4) . '</td>
-            <td class="text-right">' . fmt($elec['total_cost']) . '</td>
-            <td class="text-right">' . fmt($elec['pe'], 4) . '</td>
-            <td>' . htmlspecialchars($elec['recorded_by']) . '</td>
-        </tr></tbody></table>';
+        $body .= '<table style="width:100%; margin-bottom:10px;">
+            <tr>
+                <td style="width:50%; vertical-align:top; padding-right:10px;">
+                    <table style="width:100%;">
+                        <tr>
+                            <td style="border:none; padding:8px; background:#f0f9ff;">
+                                <i class="fas fa-bolt" style="color:#f59e0b;"></i> 
+                                <strong>Electricity Usage:</strong>
+                            </td>
+                            <td style="border:none; text-align:right; padding:8px; background:#f0f9ff;">
+                                ' . fmt($elec['ee_unit']) . ' kWh
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="border:none; padding:8px;">
+                                <i class="fas fa-coins" style="color:#f59e0b;"></i> 
+                                <strong>Cost per Unit:</strong>
+                            </td>
+                            <td style="border:none; text-align:right; padding:8px;">
+                                ' . fmt($elec['cost_per_unit'], 4) . ' Baht/kWh
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="border:none; padding:8px; background:#fef2f2;">
+                                <i class="fas fa-money-bill-wave" style="color:#dc2626;"></i> 
+                                <strong>Total Cost:</strong>
+                            </td>
+                            <td style="border:none; text-align:right; padding:8px; background:#fef2f2; font-weight:bold; color:#dc2626;">
+                                ' . fmt($elec['total_cost']) . ' Baht
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+                <td style="width:50%; vertical-align:top;">
+                    <table style="width:100%;">
+                        <tr>
+                            <td style="border:none; padding:8px; background:#f0f9ff;">
+                                <i class="fas fa-chart-pie" style="color:#3b82f6;"></i> 
+                                <strong>PE (Performance):</strong>
+                            </td>
+                            <td style="border:none; text-align:right; padding:8px; background:#f0f9ff;">
+                                ' . fmt($elec['pe'], 4) . '
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="border:none; padding:8px;">
+                                <i class="fas fa-user" style="color:#6b7280;"></i> 
+                                <strong>Recorded By:</strong>
+                            </td>
+                            <td style="border:none; text-align:right; padding:8px;">
+                                <i class="fas fa-user-check" style="color:#10b981;"></i> ' . htmlspecialchars($elec['recorded_by']) . '
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>';
+        
+        // Footer note
+        $body .= '<div style="margin-top:5px; text-align:center; font-size:8pt; color:#6b7280; border-top:1px dashed #e5e7eb; padding-top:5px;">
+            <i class="fas fa-chart-line"></i> Electricity summary for ' . $displayDate . '
+        </div>';
+        
     } else { $body .= noData(); }
 
-    return htmlWrap('รายงานประจำวัน', "วันที่ $thaiDate", $body);
+    return htmlWrap('Daily Report', "Date: $displayDate", $body);
 }
 
 
@@ -381,8 +594,7 @@ function buildDailyHTML($db): string {
 function buildMonthlyHTML($db): string {
     $month     = (int)($_GET['month'] ?? date('m'));
     $year      = (int)($_GET['year']  ?? date('Y'));
-    $thaiYear  = $year + 543;
-    $period    = thaiMonth($month) . ' พ.ศ. ' . $thaiYear;
+    $period    = thaiMonth($month) . ' ' . $year;
     $startDate = "$year-" . str_pad($month, 2, '0', STR_PAD_LEFT) . '-01';
     $endDate   = date('Y-m-t', strtotime($startDate));
     $daysInMonth = (int)date('t', strtotime($startDate));
@@ -415,34 +627,41 @@ function buildMonthlyHTML($db): string {
                 FROM electricity_summary WHERE record_date BETWEEN ? AND ?",
                 [$startDate,$endDate]);
 
-    $body  = sectionTitle('📋 สรุปรายเดือน — ทุกโมดูล');
+    $body  = sectionTitle('📋 Monthly Summary — All Modules');
     $body .= '<table><thead><tr>
-        <th>โมดูล</th><th class="text-right">วันที่มีข้อมูล</th>
-        <th class="text-right">บันทึกทั้งหมด</th><th class="text-right">ค่ารวม</th>
-        <th class="text-right">ค่าเฉลี่ย/วัน</th><th>หมายเหตุ</th>
+        <th><i class="fas fa-cube"></i> Module</th>
+        <th class="text-right"><i class="fas fa-calendar"></i> Days</th>
+        <th class="text-right"><i class="fas fa-database"></i> Records</th>
+        <th class="text-right"><i class="fas fa-chart-line"></i> Total</th>
+        <th class="text-right"><i class="fas fa-chart-bar"></i> Daily Avg</th>
+        <th><i class="fas fa-info-circle"></i> Notes</th>
     </tr></thead><tbody>';
 
     $summaries = [
         ['🔵 Air Compressor', $air['days']??0, $air['recs']??0,
          fmt($air['tot']), fmt(($air['tot']??0)/max($air['days']??1,1)),
-         'NG: '.($air['ng']??0).' รายการ | หน่วย'],
-        ['⚡ ไฟฟ้า', $energy['days']??0, '-',
-         fmt($energy['elec']), fmt(($energy['elec']??0)/max($energy['days']??1,1)), 'kWh'],
-        ['💧 น้ำ', $energy['days']??0, '-',
-         fmt($energy['water']), fmt(($energy['water']??0)/max($energy['days']??1,1)), 'm³'],
+         'NG: '.($air['ng']??0).' items', '#4361ee'],
+        ['⚡ Electricity', $energy['days']??0, '-',
+         fmt($energy['elec']).' kWh', fmt(($energy['elec']??0)/max($energy['days']??1,1)).' kWh',
+         'Total usage', '#f59e0b'],
+        ['💧 Water', $energy['days']??0, '-',
+         fmt($energy['water']).' m³', fmt(($energy['water']??0)/max($energy['days']??1,1)).' m³',
+         'Total usage', '#3b82f6'],
         ['🔴 LPG', $lpg['days']??0, '-',
-         fmt($lpg['tot']), '-', 'OK:'.($lpg['ok']??0).' NG:'.($lpg['ng']??0)],
+         fmt($lpg['tot']).' units', '-',
+         'OK:'.($lpg['ok']??0).' NG:'.($lpg['ng']??0), '#dc2626'],
         ['🏭 Boiler', $boiler['days']??0, '-',
-         fmt($boiler['hours']).' ชม.', fmt($boiler['avg_p']).' bar',
-         'เชื้อเพลิง '.fmt($boiler['fuel']).' L'],
+         fmt($boiler['hours']).' hrs', fmt($boiler['avg_p']).' bar',
+         'Fuel: '.fmt($boiler['fuel']).' L', '#6b7280'],
         ['📊 Summary Electricity', $elec['days']??0, '-',
-         number_format($elec['cost']??0,2).' บาท', fmt($elec['ee']).' kWh',
-         'อัตรา '.fmt($elec['rate'],4).' บาท/หน่วย'],
+         fmt($elec['cost']??0).' Baht', fmt($elec['ee']).' kWh',
+         'Rate: '.fmt($elec['rate'],4).' Baht/unit', '#10b981'],
     ];
-    foreach ($summaries as $i => [$mod,$days,$recs,$tot,$avg,$note]) {
+    
+    foreach ($summaries as $i => [$mod,$days,$recs,$tot,$avg,$note,$color]) {
         $bg = $i % 2 === 0 ? '' : " style='background:#ffffff'";
         $body .= "<tr{$bg}>
-            <td><strong>{$mod}</strong></td>
+            <td><strong style='color:{$color};'><i class='fas fa-square' style='color:{$color};'></i> {$mod}</strong></td>
             <td class='text-right'>{$days}</td>
             <td class='text-right'>{$recs}</td>
             <td class='text-right'>{$tot}</td>
@@ -454,7 +673,9 @@ function buildMonthlyHTML($db): string {
 
     // ── Daily breakdown table ─────────────────────────────────────────────────
     $body .= '<div class="page-break"></div>';
-    $body .= sectionTitle('📅 รายละเอียดรายวัน');
+    $body .= sectionTitle('📅 Daily Breakdown');
+    
+    $body .= '<div class="module-header"><span class="module-badge" style="background:#4361ee;"><i class="fas fa-calendar-alt"></i> Daily Details</span></div>';
 
     $stmt = $db->prepare("SELECT r.record_date,
         SUM(CASE WHEN m.meter_type='electricity' THEN r.usage_amount ELSE 0 END) as elec,
@@ -470,9 +691,12 @@ function buildMonthlyHTML($db): string {
     $elecDaily = []; foreach ($elecDailyStmt->fetchAll(PDO::FETCH_ASSOC) as $ed) $elecDaily[$ed['record_date']] = $ed;
 
     $body .= '<table><thead><tr>
-        <th>วันที่</th><th class="text-right">ไฟฟ้า (kWh)</th>
-        <th class="text-right">น้ำ (m³)</th><th class="text-right">EE (หน่วย)</th>
-        <th class="text-right">ค่าไฟ (บาท)</th><th class="text-right">PE</th>
+        <th><i class="fas fa-calendar"></i> Date</th>
+        <th class="text-right"><i class="fas fa-bolt"></i> Electricity (kWh)</th>
+        <th class="text-right"><i class="fas fa-water"></i> Water (m³)</th>
+        <th class="text-right"><i class="fas fa-chart-line"></i> EE (Units)</th>
+        <th class="text-right"><i class="fas fa-money-bill"></i> Cost (Baht)</th>
+        <th class="text-right"><i class="fas fa-chart-pie"></i> PE</th>
     </tr></thead><tbody>';
 
     $totElec = $totWater = $totEE = $totCost = 0;
@@ -486,11 +710,11 @@ function buildMonthlyHTML($db): string {
         $costV   = $er ? (float)$er['total_cost'] : 0;
         $peV     = $er ? fmt($er['pe'], 4) : '-';
         $totElec += $elecV; $totWater += $waterV; $totEE += $eeV; $totCost += $costV;
-        $thaiD   = $d . '/' . str_pad($month, 2, '0', STR_PAD_LEFT) . '/' . $thaiYear;
+        $dateDisp = $d . '/' . str_pad($month, 2, '0', STR_PAD_LEFT) . '/' . $year;
         $hasData = $dr || $er;
         $style   = $hasData ? '' : " style='color:#c7d2fe;'";
         $body   .= "<tr{$style}>
-            <td>{$thaiD}</td>
+            <td>{$dateDisp}</td>
             <td class='text-right'>" . ($elecV ? fmt($elecV) : '-') . "</td>
             <td class='text-right'>" . ($waterV ? fmt($waterV) : '-') . "</td>
             <td class='text-right'>" . ($eeV ? fmt($eeV) : '-') . "</td>
@@ -499,16 +723,16 @@ function buildMonthlyHTML($db): string {
         </tr>";
     }
     $body .= "<tr class='total-row'>
-        <td>รวมทั้งเดือน</td>
-        <td class='text-right'>" . fmt($totElec) . "</td>
-        <td class='text-right'>" . fmt($totWater) . "</td>
-        <td class='text-right'>" . fmt($totEE) . "</td>
-        <td class='text-right'>" . fmt($totCost) . "</td>
+        <td><strong>Monthly Total</strong></td>
+        <td class='text-right'><strong>" . fmt($totElec) . "</strong></td>
+        <td class='text-right'><strong>" . fmt($totWater) . "</strong></td>
+        <td class='text-right'><strong>" . fmt($totEE) . "</strong></td>
+        <td class='text-right'><strong>" . fmt($totCost) . "</strong></td>
         <td>-</td>
     </tr>";
     $body .= '</tbody></table>';
 
-    return htmlWrap('รายงานประจำเดือน', $period, $body);
+    return htmlWrap('Monthly Report', $period, $body);
 }
 
 
@@ -517,19 +741,20 @@ function buildMonthlyHTML($db): string {
 // ══════════════════════════════════════════════════════════════════════════════
 function buildYearlyHTML($db): string {
     $year      = (int)($_GET['year'] ?? date('Y'));
-    $thaiYear  = $year + 543;
     $startDate = "$year-01-01";
     $endDate   = "$year-12-31";
 
-    $body  = sectionTitle("📅 สรุปรายเดือน ประจำปี พ.ศ. $thaiYear");
+    $body  = sectionTitle("📅 Monthly Summary - Year $year");
+    $body .= '<div class="module-header"><span class="module-badge" style="background:#4361ee;"><i class="fas fa-calendar-alt"></i> Monthly Breakdown</span></div>';
+    
     $body .= '<table><thead><tr>
-        <th>เดือน</th>
-        <th class="text-right">ไฟฟ้า (kWh)</th>
-        <th class="text-right">น้ำ (m³)</th>
-        <th class="text-right">LPG</th>
-        <th class="text-right">Boiler (ชม.)</th>
-        <th class="text-right">ค่าไฟ (บาท)</th>
-        <th class="text-right">EE (หน่วย)</th>
+        <th><i class="fas fa-calendar"></i> Month</th>
+        <th class="text-right"><i class="fas fa-bolt"></i> Electricity (kWh)</th>
+        <th class="text-right"><i class="fas fa-water"></i> Water (m³)</th>
+        <th class="text-right"><i class="fas fa-fire"></i> LPG</th>
+        <th class="text-right"><i class="fas fa-industry"></i> Boiler (hrs)</th>
+        <th class="text-right"><i class="fas fa-money-bill"></i> Electricity Cost</th>
+        <th class="text-right"><i class="fas fa-chart-line"></i> EE (Units)</th>
     </tr></thead><tbody>';
 
     $totals = array_fill(0, 6, 0.0);
@@ -550,7 +775,7 @@ function buildYearlyHTML($db): string {
 
         $bg = $m % 2 === 0 ? '' : " style='background:#ffffff'";
         $body .= "<tr{$bg}>
-            <td>" . thaiMonth($m) . "</td>
+            <td><strong>" . thaiMonth($m) . "</strong></td>
             <td class='text-right'>" . ($elec ? fmt($elec) : '-') . "</td>
             <td class='text-right'>" . ($water ? fmt($water) : '-') . "</td>
             <td class='text-right'>" . ($lpg   ? fmt($lpg)   : '-') . "</td>
@@ -560,33 +785,41 @@ function buildYearlyHTML($db): string {
         </tr>";
     }
     $body .= "<tr class='total-row'>
-        <td>รวมทั้งปี</td>
-        <td class='text-right'>" . fmt($totals[0]) . "</td>
-        <td class='text-right'>" . fmt($totals[1]) . "</td>
-        <td class='text-right'>" . fmt($totals[2]) . "</td>
-        <td class='text-right'>" . fmt($totals[3], 1) . "</td>
-        <td class='text-right'>" . fmt($totals[4]) . "</td>
-        <td class='text-right'>" . fmt($totals[5]) . "</td>
+        <td><strong>Yearly Total</strong></td>
+        <td class='text-right'><strong>" . fmt($totals[0]) . "</strong></td>
+        <td class='text-right'><strong>" . fmt($totals[1]) . "</strong></td>
+        <td class='text-right'><strong>" . fmt($totals[2]) . "</strong></td>
+        <td class='text-right'><strong>" . fmt($totals[3], 1) . "</strong></td>
+        <td class='text-right'><strong>" . fmt($totals[4]) . "</strong></td>
+        <td class='text-right'><strong>" . fmt($totals[5]) . "</strong></td>
     </tr></tbody></table>";
 
     // ── KPI block ─────────────────────────────────────────────────────────────
-    $body .= sectionTitle('🏆 KPI ประจำปี');
-    $body .= '<table><thead><tr><th>รายการ</th><th class="text-right">ค่า</th><th>หน่วย</th></tr></thead><tbody>';
+    $body .= sectionTitle('🏆 Yearly KPIs');
+    $body .= '<div class="module-header"><span class="module-badge" style="background:#10b981;"><i class="fas fa-trophy"></i> Key Performance Indicators</span></div>';
+    
+    $body .= '<table><thead><tr>
+        <th><i class="fas fa-list"></i> Item</th>
+        <th class="text-right"><i class="fas fa-chart-line"></i> Value</th>
+        <th><i class="fas fa-weight-hanging"></i> Unit</th>
+    </tr></thead><tbody>';
+    
     $kpis = [
-        ['ไฟฟ้ารวมทั้งปี', fmt($totals[0]), 'kWh'],
-        ['น้ำรวมทั้งปี',   fmt($totals[1]), 'm³'],
-        ['LPG รวมทั้งปี',  fmt($totals[2]), 'หน่วย'],
-        ['ค่าไฟฟ้ารวม',    fmt($totals[4]), 'บาท'],
-        ['Boiler ชั่วโมงรวม', fmt($totals[3], 1), 'ชั่วโมง'],
-        ['EE รวม',         fmt($totals[5]), 'หน่วย'],
+        ['Total Electricity', fmt($totals[0]), 'kWh'],
+        ['Total Water',   fmt($totals[1]), 'm³'],
+        ['Total LPG',  fmt($totals[2]), 'units'],
+        ['Total Electricity Cost',    fmt($totals[4]), 'Baht'],
+        ['Boiler Total Hours', fmt($totals[3], 1), 'hours'],
+        ['Total EE Units',         fmt($totals[5]), 'units'],
     ];
+    
     foreach ($kpis as $i => [$l,$v,$u]) {
         $bg = $i % 2 === 0 ? '' : " style='background:#ffffff'";
-        $body .= "<tr{$bg}><td>{$l}</td><td class='text-right'>{$v}</td><td>{$u}</td></tr>";
+        $body .= "<tr{$bg}><td><i class='fas fa-circle' style='color:#10b981; font-size:6pt;'></i> {$l}</td><td class='text-right'><strong>{$v}</strong></td><td>{$u}</td></tr>";
     }
     $body .= '</tbody></table>';
 
-    return htmlWrap('รายงานประจำปี', "ปี พ.ศ. $thaiYear (ค.ศ. $year)", $body);
+    return htmlWrap('Yearly Report', "Year $year", $body);
 }
 
 
@@ -601,15 +834,20 @@ function buildComparisonHTML($db): string {
     $fp1 = date('d/m/Y', strtotime($p1s)) . ' — ' . date('d/m/Y', strtotime($p1e));
     $fp2 = date('d/m/Y', strtotime($p2s)) . ' — ' . date('d/m/Y', strtotime($p2e));
 
-    $body  = sectionTitle("🔄 เปรียบเทียบ 2 ช่วงเวลา");
+    $body  = sectionTitle("🔄 Comparison of 2 Periods");
+    $body .= '<div class="module-header">';
+    $body .= '<span class="module-badge" style="background:#4361ee;"><i class="fas fa-calendar"></i> Period 1: ' . $fp1 . '</span>';
+    $body .= '<span class="module-badge" style="background:#7c3aed;"><i class="fas fa-calendar"></i> Period 2: ' . $fp2 . '</span>';
+    $body .= '</div>';
+    
     $body .= "<table><thead><tr>
-        <th rowspan='2'>โมดูล / รายการ</th>
-        <th colspan='3' style='background:#4361ee;'>ช่วงที่ 1: {$fp1}</th>
-        <th colspan='3' style='background:#7c3aed;'>ช่วงที่ 2: {$fp2}</th>
-        <th rowspan='2'>เปลี่ยนแปลง (%)</th>
+        <th rowspan='2'><i class='fas fa-cube'></i> Module</th>
+        <th colspan='3' style='background:#4361ee;'>Period 1</th>
+        <th colspan='3' style='background:#7c3aed;'>Period 2</th>
+        <th rowspan='2'><i class='fas fa-chart-line'></i> Change (%)</th>
     </tr><tr>
-        <th>รวม</th><th>เฉลี่ย/วัน</th><th>NG/งาน</th>
-        <th>รวม</th><th>เฉลี่ย/วัน</th><th>NG/งาน</th>
+        <th>Total</th><th>Daily Avg</th><th>NG/Count</th>
+        <th>Total</th><th>Daily Avg</th><th>NG/Count</th>
     </tr></thead><tbody>";
 
     $modules = [
@@ -619,11 +857,11 @@ function buildComparisonHTML($db): string {
              OR(s.min_value IS NULL AND ABS(r.actual_value-s.standard_value)>s.standard_value*0.1) THEN 1 ELSE 0 END) as ng
              FROM air_daily_records r JOIN air_inspection_standards s ON r.inspection_item_id=s.id
              WHERE r.record_date BETWEEN ? AND ?", [$s,$e]),
-        'ไฟฟ้า (kWh)' => fn($s,$e) => qOne($db,
+        'Electricity (kWh)' => fn($s,$e) => qOne($db,
             "SELECT SUM(r.usage_amount) as tot, AVG(r.usage_amount) as avg, 0 as ng
              FROM meter_daily_readings r JOIN mc_mdb_water m ON r.meter_id=m.id
              WHERE m.meter_type='electricity' AND r.record_date BETWEEN ? AND ?", [$s,$e]),
-        'น้ำ (m³)' => fn($s,$e) => qOne($db,
+        'Water (m³)' => fn($s,$e) => qOne($db,
             "SELECT SUM(r.usage_amount) as tot, AVG(r.usage_amount) as avg, 0 as ng
              FROM meter_daily_readings r JOIN mc_mdb_water m ON r.meter_id=m.id
              WHERE m.meter_type='water' AND r.record_date BETWEEN ? AND ?", [$s,$e]),
@@ -632,10 +870,10 @@ function buildComparisonHTML($db): string {
              SUM(CASE WHEN i.item_type='enum' AND r.enum_value='NG' THEN 1 ELSE 0 END) as ng
              FROM lpg_daily_records r JOIN lpg_inspection_items i ON r.item_id=i.id
              WHERE r.record_date BETWEEN ? AND ?", [$s,$e]),
-        'Boiler (ชม.)' => fn($s,$e) => qOne($db,
+        'Boiler (hrs)' => fn($s,$e) => qOne($db,
             "SELECT SUM(operating_hours) as tot, AVG(operating_hours) as avg, 0 as ng
              FROM boiler_daily_records WHERE record_date BETWEEN ? AND ?", [$s,$e]),
-        'ค่าไฟฟ้า (บาท)' => fn($s,$e) => qOne($db,
+        'Electricity Cost (Baht)' => fn($s,$e) => qOne($db,
             "SELECT SUM(total_cost) as tot, AVG(total_cost) as avg, 0 as ng
              FROM electricity_summary WHERE record_date BETWEEN ? AND ?", [$s,$e]),
     ];
@@ -648,7 +886,7 @@ function buildComparisonHTML($db): string {
         $chg = $t1 > 0 ? round(($t2 - $t1) / $t1 * 100, 2) : null;
         $chgHtml = $chg !== null
             ? "<span class='" . ($chg > 5 ? 'chg-pos' : ($chg < -5 ? 'chg-neg' : 'chg-zero')) . "'>"
-              . ($chg > 0 ? "+$chg%" : "$chg%") . "</span>"
+              . ($chg > 0 ? "↑ +$chg%" : "↓ $chg%") . "</span>"
             : '-';
         $bgIdx   = array_search($label, array_keys($modules));
         $bg      = ($bgIdx % 2 === 0) ? '' : " style='background:#ffffff'";
@@ -665,5 +903,5 @@ function buildComparisonHTML($db): string {
     }
     $body .= '</tbody></table>';
 
-    return htmlWrap('รายงานเปรียบเทียบ', "ช่วง 1: {$fp1} | ช่วง 2: {$fp2}", $body);
+    return htmlWrap('Comparison Report', "Period 1: {$fp1} | Period 2: {$fp2}", $body);
 }

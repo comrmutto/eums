@@ -750,6 +750,11 @@ $prevSummary = $stmt->fetch()['total'] ?? 0;
     </div>
 </section>
 
+<?php
+// Include footer
+require_once __DIR__ . '/../includes/footer.php';
+?>
+
 <script>
 let monthlyChart = null;
 
@@ -869,8 +874,3 @@ function exportReport(format) {
     }
 }
 </style>
-
-<?php
-// Include footer
-require_once __DIR__ . '/../includes/footer.php';
-?>

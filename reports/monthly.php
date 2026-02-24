@@ -750,6 +750,11 @@ foreach ($summaryDaily as $d) {
     </div>
 </section>
 
+<?php
+// Include footer
+require_once __DIR__ . '/../includes/footer.php';
+?>
+
 <script>
 let dailyChart = null;
 
@@ -880,8 +885,3 @@ function exportReport(format) {
     }
 }
 </style>
-
-<?php
-// Include footer
-require_once __DIR__ . '/../includes/footer.php';
-?>

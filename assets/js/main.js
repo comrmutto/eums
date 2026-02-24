@@ -147,10 +147,20 @@ if (typeof jQuery === 'undefined') {
             
             console.log('Initializing charts...');
             
+            // ตรวจสอบและใช้งาน state.charts แทน charts
+            if (!this.state.charts) {
+                this.state.charts = {};
+            }
+            
             // Usage trend chart
             if ($('#usageTrendChart').length) {
                 try {
-                    this.charts.usageTrend = new Chart($('#usageTrendChart'), {
+                    // Destroy existing chart if exists
+                    if (this.state.charts.usageTrend) {
+                        this.state.charts.usageTrend.destroy();
+                    }
+                    
+                    this.state.charts.usageTrend = new Chart($('#usageTrendChart'), {
                         type: 'line',
                         data: {
                             labels: [],
@@ -218,9 +228,14 @@ if (typeof jQuery === 'undefined') {
             }
             
             // Comparison chart
-            if ($('#comparisonChart').length && !window.comparisonChartInitialized) {
+            if ($('#comparisonChart').length) {
                 try {
-                    this.charts.comparison = new Chart($('#comparisonChart'), {
+                    // Destroy existing chart if exists
+                    if (this.state.charts.comparison) {
+                        this.state.charts.comparison.destroy();
+                    }
+                    
+                    this.state.charts.comparison = new Chart($('#comparisonChart'), {
                         type: 'bar',
                         data: {
                             labels: [],
@@ -272,7 +287,12 @@ if (typeof jQuery === 'undefined') {
             // Pie chart for distribution
             if ($('#distributionChart').length) {
                 try {
-                    this.charts.distribution = new Chart($('#distributionChart'), {
+                    // Destroy existing chart if exists
+                    if (this.state.charts.distribution) {
+                        this.state.charts.distribution.destroy();
+                    }
+                    
+                    this.state.charts.distribution = new Chart($('#distributionChart'), {
                         type: 'doughnut',
                         data: {
                             labels: [],
@@ -326,7 +346,7 @@ if (typeof jQuery === 'undefined') {
                 }
             }
         },
-        
+                
         /**
          * Initialize DataTables
          */
@@ -394,8 +414,7 @@ if (typeof jQuery === 'undefined') {
                         $(this).attr('id', tableId);
                         EUMS.tables[tableId] = $(this).DataTable({
                             language: {
-                            // url: 'http://cdn.datatables.net/plug-ins/1.10.21/i18n/Thai.json' <-- ตรงนี้อาจจะเป็นตัวปัญหา
-                            url: 'https://cdn.datatables.net/plug-ins/1.10.21/i18n/Thai.json' // แน่ใจว่าตรงนี้เป็น https://
+                            url: 'https://cdn.datatables.net/plug-ins/1.10.21/i18n/Thai.json'
                             },
                             pageLength: 10,
                             responsive: true
@@ -1249,14 +1268,19 @@ showNotification: function(message, type = 'info') {
     });
 
     // Handle window resize
-    $(window).on('resize', function() {
-        // FIX: ใช้ EUMS.state.charts แทน EUMS.charts + guard null
-        Object.values(EUMS.state.charts || {}).forEach(chart => {
+   // Handle window resize
+$(window).on('resize', function() {
+    // ใช้ EUMS.state.charts และตรวจสอบ null
+    if (EUMS && EUMS.state && EUMS.state.charts) {
+        Object.values(EUMS.state.charts).forEach(chart => {
             if (chart && typeof chart.resize === 'function') {
                 chart.resize();
+            } else if (chart && typeof chart.update === 'function') {
+                chart.update();
             }
         });
-    });
+    }
+});
 
     // Handle before unload
     $(window).on('beforeunload', function() {

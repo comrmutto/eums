@@ -33,12 +33,26 @@ require_once __DIR__ . '/../includes/functions.php';
 // Get database connection
 $db = getDB();
 
+// Helper function to parse date
+function parseDateParam($raw, $fallback) {
+    $raw = trim($raw);
+    // Check format DD/MM/YYYY
+    if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $raw)) {
+        $dt = DateTime::createFromFormat('d/m/Y', $raw);
+        return $dt ? $dt->format('Y-m-d') : $fallback;
+    }
+    // Check format Y-m-d
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw)) {
+        return $raw;
+    }
+    return $fallback;
+}
+
 // Get parameters
-$period1Start = isset($_GET['period1_start']) ? $_GET['period1_start'] : date('Y-m-01');
-$period1End = isset($_GET['period1_end']) ? $_GET['period1_end'] : date('Y-m-d');
-$period2Start = isset($_GET['period2_start']) ? $_GET['period2_start'] : date('Y-m-d', strtotime('-1 month'));
-$period2End = isset($_GET['period2_end']) ? $_GET['period2_end'] : date('Y-m-d', strtotime('-1 day'));
-$compareType = isset($_GET['compare_type']) ? $_GET['compare_type'] : 'modules';
+$period1Start = parseDateParam($_GET['period1_start'] ?? '', date('Y-m-01'));
+$period1End   = parseDateParam($_GET['period1_end']   ?? '', date('Y-m-d'));
+$period2Start = parseDateParam($_GET['period2_start'] ?? '', date('Y-m-d', strtotime('-1 month')));
+$period2End   = parseDateParam($_GET['period2_end']   ?? '', date('Y-m-d', strtotime('-1 day')));
 
 $period1Display = date('d/m/Y', strtotime($period1Start)) . ' - ' . date('d/m/Y', strtotime($period1End));
 $period2Display = date('d/m/Y', strtotime($period2Start)) . ' - ' . date('d/m/Y', strtotime($period2End));
@@ -56,21 +70,21 @@ $stmt = $db->prepare("
     WHERE record_date BETWEEN ? AND ?
 ");
 $stmt->execute([$period1Start, $period1End]);
-$air1 = $stmt->fetch();
+$air1 = $stmt->fetch(PDO::FETCH_ASSOC);
 $stmt->execute([$period2Start, $period2End]);
-$air2 = $stmt->fetch();
+$air2 = $stmt->fetch(PDO::FETCH_ASSOC);
 
 $comparisonData['air'] = [
     'name' => 'Air Compressor',
     'period1' => [
-        'total' => $air1['total'],
-        'records' => $air1['records'],
-        'average' => $air1['average']
+        'total' => $air1['total'] ?? 0,
+        'records' => $air1['records'] ?? 0,
+        'average' => $air1['average'] ?? 0
     ],
     'period2' => [
-        'total' => $air2['total'],
-        'records' => $air2['records'],
-        'average' => $air2['average']
+        'total' => $air2['total'] ?? 0,
+        'records' => $air2['records'] ?? 0,
+        'average' => $air2['average'] ?? 0
     ]
 ];
 
@@ -87,25 +101,25 @@ $stmt = $db->prepare("
     WHERE r.record_date BETWEEN ? AND ?
 ");
 $stmt->execute([$period1Start, $period1End]);
-$energy1 = $stmt->fetch();
+$energy1 = $stmt->fetch(PDO::FETCH_ASSOC);
 $stmt->execute([$period2Start, $period2End]);
-$energy2 = $stmt->fetch();
+$energy2 = $stmt->fetch(PDO::FETCH_ASSOC);
 
 $comparisonData['energy'] = [
     'name' => 'Energy & Water',
     'period1' => [
-        'total' => $energy1['total'],
-        'records' => $energy1['records'],
-        'average' => $energy1['average'],
-        'electricity' => $energy1['electricity'],
-        'water' => $energy1['water']
+        'total' => $energy1['total'] ?? 0,
+        'records' => $energy1['records'] ?? 0,
+        'average' => $energy1['average'] ?? 0,
+        'electricity' => $energy1['electricity'] ?? 0,
+        'water' => $energy1['water'] ?? 0
     ],
     'period2' => [
-        'total' => $energy2['total'],
-        'records' => $energy2['records'],
-        'average' => $energy2['average'],
-        'electricity' => $energy2['electricity'],
-        'water' => $energy2['water']
+        'total' => $energy2['total'] ?? 0,
+        'records' => $energy2['records'] ?? 0,
+        'average' => $energy2['average'] ?? 0,
+        'electricity' => $energy2['electricity'] ?? 0,
+        'water' => $energy2['water'] ?? 0
     ]
 ];
 
@@ -121,23 +135,23 @@ $stmt = $db->prepare("
     WHERE r.record_date BETWEEN ? AND ?
 ");
 $stmt->execute([$period1Start, $period1End]);
-$lpg1 = $stmt->fetch();
+$lpg1 = $stmt->fetch(PDO::FETCH_ASSOC);
 $stmt->execute([$period2Start, $period2End]);
-$lpg2 = $stmt->fetch();
+$lpg2 = $stmt->fetch(PDO::FETCH_ASSOC);
 
 $comparisonData['lpg'] = [
     'name' => 'LPG',
     'period1' => [
-        'total' => $lpg1['total'],
-        'records' => $lpg1['records'],
-        'ok_count' => $lpg1['ok_count'],
-        'ng_count' => $lpg1['ng_count']
+        'total' => $lpg1['total'] ?? 0,
+        'records' => $lpg1['records'] ?? 0,
+        'ok_count' => $lpg1['ok_count'] ?? 0,
+        'ng_count' => $lpg1['ng_count'] ?? 0
     ],
     'period2' => [
-        'total' => $lpg2['total'],
-        'records' => $lpg2['records'],
-        'ok_count' => $lpg2['ok_count'],
-        'ng_count' => $lpg2['ng_count']
+        'total' => $lpg2['total'] ?? 0,
+        'records' => $lpg2['records'] ?? 0,
+        'ok_count' => $lpg2['ok_count'] ?? 0,
+        'ng_count' => $lpg2['ng_count'] ?? 0
     ]
 ];
 
@@ -153,25 +167,25 @@ $stmt = $db->prepare("
     WHERE record_date BETWEEN ? AND ?
 ");
 $stmt->execute([$period1Start, $period1End]);
-$boiler1 = $stmt->fetch();
+$boiler1 = $stmt->fetch(PDO::FETCH_ASSOC);
 $stmt->execute([$period2Start, $period2End]);
-$boiler2 = $stmt->fetch();
+$boiler2 = $stmt->fetch(PDO::FETCH_ASSOC);
 
 $comparisonData['boiler'] = [
     'name' => 'Boiler',
     'period1' => [
-        'fuel' => $boiler1['fuel'],
-        'hours' => $boiler1['hours'],
-        'avg_pressure' => $boiler1['avg_pressure'],
-        'avg_temp' => $boiler1['avg_temp'],
-        'records' => $boiler1['records']
+        'fuel' => $boiler1['fuel'] ?? 0,
+        'hours' => $boiler1['hours'] ?? 0,
+        'avg_pressure' => $boiler1['avg_pressure'] ?? 0,
+        'avg_temp' => $boiler1['avg_temp'] ?? 0,
+        'records' => $boiler1['records'] ?? 0
     ],
     'period2' => [
-        'fuel' => $boiler2['fuel'],
-        'hours' => $boiler2['hours'],
-        'avg_pressure' => $boiler2['avg_pressure'],
-        'avg_temp' => $boiler2['avg_temp'],
-        'records' => $boiler2['records']
+        'fuel' => $boiler2['fuel'] ?? 0,
+        'hours' => $boiler2['hours'] ?? 0,
+        'avg_pressure' => $boiler2['avg_pressure'] ?? 0,
+        'avg_temp' => $boiler2['avg_temp'] ?? 0,
+        'records' => $boiler2['records'] ?? 0
     ]
 ];
 
@@ -186,23 +200,23 @@ $stmt = $db->prepare("
     WHERE record_date BETWEEN ? AND ?
 ");
 $stmt->execute([$period1Start, $period1End]);
-$summary1 = $stmt->fetch();
+$summary1 = $stmt->fetch(PDO::FETCH_ASSOC);
 $stmt->execute([$period2Start, $period2End]);
-$summary2 = $stmt->fetch();
+$summary2 = $stmt->fetch(PDO::FETCH_ASSOC);
 
 $comparisonData['summary'] = [
     'name' => 'Summary Electricity',
     'period1' => [
-        'total_ee' => $summary1['total_ee'],
-        'total_cost' => $summary1['total_cost'],
-        'avg_cost' => $summary1['avg_cost'],
-        'records' => $summary1['records']
+        'total_ee' => $summary1['total_ee'] ?? 0,
+        'total_cost' => $summary1['total_cost'] ?? 0,
+        'avg_cost' => $summary1['avg_cost'] ?? 0,
+        'records' => $summary1['records'] ?? 0
     ],
     'period2' => [
-        'total_ee' => $summary2['total_ee'],
-        'total_cost' => $summary2['total_cost'],
-        'avg_cost' => $summary2['avg_cost'],
-        'records' => $summary2['records']
+        'total_ee' => $summary2['total_ee'] ?? 0,
+        'total_cost' => $summary2['total_cost'] ?? 0,
+        'avg_cost' => $summary2['avg_cost'] ?? 0,
+        'records' => $summary2['records'] ?? 0
     ]
 ];
 ?>
@@ -225,7 +239,7 @@ $comparisonData['summary'] = [
                 </div>
             </div>
             <div class="card-body">
-                <form method="GET" class="form-horizontal">
+                <form method="GET" class="form-horizontal" id="comparisonForm">
                     <div class="row">
                         <div class="col-md-5">
                             <div class="card card-info">
@@ -237,25 +251,29 @@ $comparisonData['summary'] = [
                                         <label>วันที่เริ่มต้น</label>
                                         <div class="input-group date" id="period1StartPicker" data-target-input="nearest">
                                             <input type="text" class="form-control datetimepicker-input" 
-                                                   name="period1_start" id="period1Start" 
+                                                   id="period1StartDisplay" 
                                                    value="<?php echo date('d/m/Y', strtotime($period1Start)); ?>" 
-                                                   data-target="#period1StartPicker">
+                                                   data-target="#period1StartPicker"
+                                                   autocomplete="off">
                                             <div class="input-group-append" data-target="#period1StartPicker" data-toggle="datetimepicker">
                                                 <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                                             </div>
                                         </div>
+                                        <input type="hidden" name="period1_start" id="period1StartHidden" value="<?php echo $period1Start; ?>">
                                     </div>
                                     <div class="form-group">
                                         <label>วันที่สิ้นสุด</label>
                                         <div class="input-group date" id="period1EndPicker" data-target-input="nearest">
                                             <input type="text" class="form-control datetimepicker-input" 
-                                                   name="period1_end" id="period1End" 
+                                                   id="period1EndDisplay" 
                                                    value="<?php echo date('d/m/Y', strtotime($period1End)); ?>" 
-                                                   data-target="#period1EndPicker">
+                                                   data-target="#period1EndPicker"
+                                                   autocomplete="off">
                                             <div class="input-group-append" data-target="#period1EndPicker" data-toggle="datetimepicker">
                                                 <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                                             </div>
                                         </div>
+                                        <input type="hidden" name="period1_end" id="period1EndHidden" value="<?php echo $period1End; ?>">
                                     </div>
                                 </div>
                             </div>
@@ -275,25 +293,29 @@ $comparisonData['summary'] = [
                                         <label>วันที่เริ่มต้น</label>
                                         <div class="input-group date" id="period2StartPicker" data-target-input="nearest">
                                             <input type="text" class="form-control datetimepicker-input" 
-                                                   name="period2_start" id="period2Start" 
+                                                   id="period2StartDisplay" 
                                                    value="<?php echo date('d/m/Y', strtotime($period2Start)); ?>" 
-                                                   data-target="#period2StartPicker">
+                                                   data-target="#period2StartPicker"
+                                                   autocomplete="off">
                                             <div class="input-group-append" data-target="#period2StartPicker" data-toggle="datetimepicker">
                                                 <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                                             </div>
                                         </div>
+                                        <input type="hidden" name="period2_start" id="period2StartHidden" value="<?php echo $period2Start; ?>">
                                     </div>
                                     <div class="form-group">
                                         <label>วันที่สิ้นสุด</label>
                                         <div class="input-group date" id="period2EndPicker" data-target-input="nearest">
                                             <input type="text" class="form-control datetimepicker-input" 
-                                                   name="period2_end" id="period2End" 
+                                                   id="period2EndDisplay" 
                                                    value="<?php echo date('d/m/Y', strtotime($period2End)); ?>" 
-                                                   data-target="#period2EndPicker">
+                                                   data-target="#period2EndPicker"
+                                                   autocomplete="off">
                                             <div class="input-group-append" data-target="#period2EndPicker" data-toggle="datetimepicker">
                                                 <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                                             </div>
                                         </div>
+                                        <input type="hidden" name="period2_end" id="period2EndHidden" value="<?php echo $period2End; ?>">
                                     </div>
                                 </div>
                             </div>
@@ -330,7 +352,7 @@ $comparisonData['summary'] = [
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6">
-                                <div class="info-box bg-info">
+                                <div class="info-box bg-warning">
                                     <span class="info-box-icon"><i class="fas fa-calendar"></i></span>
                                     <div class="info-box-content">
                                         <span class="info-box-text">ช่วงเวลาที่ 1</span>
@@ -388,17 +410,21 @@ $comparisonData['summary'] = [
                                 <td class="text-right">
                                     <?php 
                                     $diff = $data['period1']['total'] - $data['period2']['total'];
+                                    $diffClass = $diff > 0 ? 'success' : ($diff < 0 ? 'danger' : 'secondary');
+                                    $diffSign = $diff > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $diff > 0 ? 'success' : ($diff < 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $diff > 0 ? '+' : ''; ?><?php echo number_format($diff, 2); ?>
+                                    <span class="badge badge-<?php echo $diffClass; ?>">
+                                        <?php echo $diffSign . number_format($diff, 2); ?>
                                     </span>
                                 </td>
                                 <td class="text-right">
                                     <?php 
                                     $percent = $data['period2']['total'] > 0 ? ($diff / $data['period2']['total']) * 100 : 0;
+                                    $percentClass = $percent > 0 ? 'success' : ($percent < 0 ? 'danger' : 'secondary');
+                                    $percentSign = $percent > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $percent > 0 ? 'success' : ($percent < 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $percent > 0 ? '+' : ''; ?><?php echo number_format($percent, 1); ?>%
+                                    <span class="badge badge-<?php echo $percentClass; ?>">
+                                        <?php echo $percentSign . number_format($percent, 1); ?>%
                                     </span>
                                 </td>
                             </tr>
@@ -409,17 +435,21 @@ $comparisonData['summary'] = [
                                 <td class="text-right">
                                     <?php 
                                     $diff = $data['period1']['records'] - $data['period2']['records'];
+                                    $diffClass = $diff > 0 ? 'success' : ($diff < 0 ? 'danger' : 'secondary');
+                                    $diffSign = $diff > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $diff > 0 ? 'success' : ($diff < 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $diff > 0 ? '+' : ''; ?><?php echo number_format($diff); ?>
+                                    <span class="badge badge-<?php echo $diffClass; ?>">
+                                        <?php echo $diffSign . number_format($diff); ?>
                                     </span>
                                 </td>
                                 <td class="text-right">
                                     <?php 
                                     $percent = $data['period2']['records'] > 0 ? ($diff / $data['period2']['records']) * 100 : 0;
+                                    $percentClass = $percent > 0 ? 'success' : ($percent < 0 ? 'danger' : 'secondary');
+                                    $percentSign = $percent > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $percent > 0 ? 'success' : ($percent < 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $percent > 0 ? '+' : ''; ?><?php echo number_format($percent, 1); ?>%
+                                    <span class="badge badge-<?php echo $percentClass; ?>">
+                                        <?php echo $percentSign . number_format($percent, 1); ?>%
                                     </span>
                                 </td>
                             </tr>
@@ -430,17 +460,21 @@ $comparisonData['summary'] = [
                                 <td class="text-right">
                                     <?php 
                                     $diff = $data['period1']['average'] - $data['period2']['average'];
+                                    $diffClass = $diff > 0 ? 'success' : ($diff < 0 ? 'danger' : 'secondary');
+                                    $diffSign = $diff > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $diff > 0 ? 'success' : ($diff < 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $diff > 0 ? '+' : ''; ?><?php echo number_format($diff, 2); ?>
+                                    <span class="badge badge-<?php echo $diffClass; ?>">
+                                        <?php echo $diffSign . number_format($diff, 2); ?>
                                     </span>
                                 </td>
                                 <td class="text-right">
                                     <?php 
                                     $percent = $data['period2']['average'] > 0 ? ($diff / $data['period2']['average']) * 100 : 0;
+                                    $percentClass = $percent > 0 ? 'success' : ($percent < 0 ? 'danger' : 'secondary');
+                                    $percentSign = $percent > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $percent > 0 ? 'success' : ($percent < 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $percent > 0 ? '+' : ''; ?><?php echo number_format($percent, 1); ?>%
+                                    <span class="badge badge-<?php echo $percentClass; ?>">
+                                        <?php echo $percentSign . number_format($percent, 1); ?>%
                                     </span>
                                 </td>
                             </tr>
@@ -453,17 +487,21 @@ $comparisonData['summary'] = [
                                 <td class="text-right">
                                     <?php 
                                     $diff = $data['period1']['total'] - $data['period2']['total'];
+                                    $diffClass = $diff > 0 ? 'success' : ($diff < 0 ? 'danger' : 'secondary');
+                                    $diffSign = $diff > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $diff > 0 ? 'success' : ($diff < 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $diff > 0 ? '+' : ''; ?><?php echo number_format($diff, 2); ?>
+                                    <span class="badge badge-<?php echo $diffClass; ?>">
+                                        <?php echo $diffSign . number_format($diff, 2); ?>
                                     </span>
                                 </td>
                                 <td class="text-right">
                                     <?php 
                                     $percent = $data['period2']['total'] > 0 ? ($diff / $data['period2']['total']) * 100 : 0;
+                                    $percentClass = $percent > 0 ? 'success' : ($percent < 0 ? 'danger' : 'secondary');
+                                    $percentSign = $percent > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $percent > 0 ? 'success' : ($percent < 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $percent > 0 ? '+' : ''; ?><?php echo number_format($percent, 1); ?>%
+                                    <span class="badge badge-<?php echo $percentClass; ?>">
+                                        <?php echo $percentSign . number_format($percent, 1); ?>%
                                     </span>
                                 </td>
                             </tr>
@@ -474,17 +512,21 @@ $comparisonData['summary'] = [
                                 <td class="text-right">
                                     <?php 
                                     $diff = $data['period1']['electricity'] - $data['period2']['electricity'];
+                                    $diffClass = $diff > 0 ? 'success' : ($diff < 0 ? 'danger' : 'secondary');
+                                    $diffSign = $diff > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $diff > 0 ? 'success' : ($diff < 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $diff > 0 ? '+' : ''; ?><?php echo number_format($diff, 2); ?>
+                                    <span class="badge badge-<?php echo $diffClass; ?>">
+                                        <?php echo $diffSign . number_format($diff, 2); ?>
                                     </span>
                                 </td>
                                 <td class="text-right">
                                     <?php 
                                     $percent = $data['period2']['electricity'] > 0 ? ($diff / $data['period2']['electricity']) * 100 : 0;
+                                    $percentClass = $percent > 0 ? 'success' : ($percent < 0 ? 'danger' : 'secondary');
+                                    $percentSign = $percent > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $percent > 0 ? 'success' : ($percent < 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $percent > 0 ? '+' : ''; ?><?php echo number_format($percent, 1); ?>%
+                                    <span class="badge badge-<?php echo $percentClass; ?>">
+                                        <?php echo $percentSign . number_format($percent, 1); ?>%
                                     </span>
                                 </td>
                             </tr>
@@ -495,17 +537,21 @@ $comparisonData['summary'] = [
                                 <td class="text-right">
                                     <?php 
                                     $diff = $data['period1']['water'] - $data['period2']['water'];
+                                    $diffClass = $diff > 0 ? 'success' : ($diff < 0 ? 'danger' : 'secondary');
+                                    $diffSign = $diff > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $diff > 0 ? 'success' : ($diff < 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $diff > 0 ? '+' : ''; ?><?php echo number_format($diff, 2); ?>
+                                    <span class="badge badge-<?php echo $diffClass; ?>">
+                                        <?php echo $diffSign . number_format($diff, 2); ?>
                                     </span>
                                 </td>
                                 <td class="text-right">
                                     <?php 
                                     $percent = $data['period2']['water'] > 0 ? ($diff / $data['period2']['water']) * 100 : 0;
+                                    $percentClass = $percent > 0 ? 'success' : ($percent < 0 ? 'danger' : 'secondary');
+                                    $percentSign = $percent > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $percent > 0 ? 'success' : ($percent < 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $percent > 0 ? '+' : ''; ?><?php echo number_format($percent, 1); ?>%
+                                    <span class="badge badge-<?php echo $percentClass; ?>">
+                                        <?php echo $percentSign . number_format($percent, 1); ?>%
                                     </span>
                                 </td>
                             </tr>
@@ -518,17 +564,21 @@ $comparisonData['summary'] = [
                                 <td class="text-right">
                                     <?php 
                                     $diff = $data['period1']['total'] - $data['period2']['total'];
+                                    $diffClass = $diff > 0 ? 'success' : ($diff < 0 ? 'danger' : 'secondary');
+                                    $diffSign = $diff > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $diff > 0 ? 'success' : ($diff < 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $diff > 0 ? '+' : ''; ?><?php echo number_format($diff, 2); ?>
+                                    <span class="badge badge-<?php echo $diffClass; ?>">
+                                        <?php echo $diffSign . number_format($diff, 2); ?>
                                     </span>
                                 </td>
                                 <td class="text-right">
                                     <?php 
                                     $percent = $data['period2']['total'] > 0 ? ($diff / $data['period2']['total']) * 100 : 0;
+                                    $percentClass = $percent > 0 ? 'success' : ($percent < 0 ? 'danger' : 'secondary');
+                                    $percentSign = $percent > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $percent > 0 ? 'success' : ($percent < 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $percent > 0 ? '+' : ''; ?><?php echo number_format($percent, 1); ?>%
+                                    <span class="badge badge-<?php echo $percentClass; ?>">
+                                        <?php echo $percentSign . number_format($percent, 1); ?>%
                                     </span>
                                 </td>
                             </tr>
@@ -539,17 +589,21 @@ $comparisonData['summary'] = [
                                 <td class="text-right">
                                     <?php 
                                     $diff = $data['period1']['ok_count'] - $data['period2']['ok_count'];
+                                    $diffClass = $diff > 0 ? 'success' : ($diff < 0 ? 'danger' : 'secondary');
+                                    $diffSign = $diff > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $diff > 0 ? 'success' : ($diff < 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $diff > 0 ? '+' : ''; ?><?php echo number_format($diff); ?>
+                                    <span class="badge badge-<?php echo $diffClass; ?>">
+                                        <?php echo $diffSign . number_format($diff); ?>
                                     </span>
                                 </td>
                                 <td class="text-right">
                                     <?php 
                                     $percent = $data['period2']['ok_count'] > 0 ? ($diff / $data['period2']['ok_count']) * 100 : 0;
+                                    $percentClass = $percent > 0 ? 'success' : ($percent < 0 ? 'danger' : 'secondary');
+                                    $percentSign = $percent > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $percent > 0 ? 'success' : ($percent < 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $percent > 0 ? '+' : ''; ?><?php echo number_format($percent, 1); ?>%
+                                    <span class="badge badge-<?php echo $percentClass; ?>">
+                                        <?php echo $percentSign . number_format($percent, 1); ?>%
                                     </span>
                                 </td>
                             </tr>
@@ -560,17 +614,22 @@ $comparisonData['summary'] = [
                                 <td class="text-right">
                                     <?php 
                                     $diff = $data['period1']['ng_count'] - $data['period2']['ng_count'];
+                                    // NG ที่ลดลง是好 (success), ที่เพิ่มขึ้น是坏 (danger)
+                                    $diffClass = $diff < 0 ? 'success' : ($diff > 0 ? 'danger' : 'secondary');
+                                    $diffSign = $diff > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $diff < 0 ? 'success' : ($diff > 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $diff > 0 ? '+' : ''; ?><?php echo number_format($diff); ?>
+                                    <span class="badge badge-<?php echo $diffClass; ?>">
+                                        <?php echo $diffSign . number_format($diff); ?>
                                     </span>
                                 </td>
                                 <td class="text-right">
                                     <?php 
                                     $percent = $data['period2']['ng_count'] > 0 ? ($diff / $data['period2']['ng_count']) * 100 : 0;
+                                    $percentClass = $percent < 0 ? 'success' : ($percent > 0 ? 'danger' : 'secondary');
+                                    $percentSign = $percent > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $percent < 0 ? 'success' : ($percent > 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $percent > 0 ? '+' : ''; ?><?php echo number_format($percent, 1); ?>%
+                                    <span class="badge badge-<?php echo $percentClass; ?>">
+                                        <?php echo $percentSign . number_format($percent, 1); ?>%
                                     </span>
                                 </td>
                             </tr>
@@ -583,17 +642,21 @@ $comparisonData['summary'] = [
                                 <td class="text-right">
                                     <?php 
                                     $diff = $data['period1']['fuel'] - $data['period2']['fuel'];
+                                    $diffClass = $diff > 0 ? 'success' : ($diff < 0 ? 'danger' : 'secondary');
+                                    $diffSign = $diff > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $diff > 0 ? 'success' : ($diff < 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $diff > 0 ? '+' : ''; ?><?php echo number_format($diff, 2); ?>
+                                    <span class="badge badge-<?php echo $diffClass; ?>">
+                                        <?php echo $diffSign . number_format($diff, 2); ?>
                                     </span>
                                 </td>
                                 <td class="text-right">
                                     <?php 
                                     $percent = $data['period2']['fuel'] > 0 ? ($diff / $data['period2']['fuel']) * 100 : 0;
+                                    $percentClass = $percent > 0 ? 'success' : ($percent < 0 ? 'danger' : 'secondary');
+                                    $percentSign = $percent > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $percent > 0 ? 'success' : ($percent < 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $percent > 0 ? '+' : ''; ?><?php echo number_format($percent, 1); ?>%
+                                    <span class="badge badge-<?php echo $percentClass; ?>">
+                                        <?php echo $percentSign . number_format($percent, 1); ?>%
                                     </span>
                                 </td>
                             </tr>
@@ -604,17 +667,21 @@ $comparisonData['summary'] = [
                                 <td class="text-right">
                                     <?php 
                                     $diff = $data['period1']['hours'] - $data['period2']['hours'];
+                                    $diffClass = $diff > 0 ? 'success' : ($diff < 0 ? 'danger' : 'secondary');
+                                    $diffSign = $diff > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $diff > 0 ? 'success' : ($diff < 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $diff > 0 ? '+' : ''; ?><?php echo number_format($diff, 1); ?>
+                                    <span class="badge badge-<?php echo $diffClass; ?>">
+                                        <?php echo $diffSign . number_format($diff, 1); ?>
                                     </span>
                                 </td>
                                 <td class="text-right">
                                     <?php 
                                     $percent = $data['period2']['hours'] > 0 ? ($diff / $data['period2']['hours']) * 100 : 0;
+                                    $percentClass = $percent > 0 ? 'success' : ($percent < 0 ? 'danger' : 'secondary');
+                                    $percentSign = $percent > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $percent > 0 ? 'success' : ($percent < 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $percent > 0 ? '+' : ''; ?><?php echo number_format($percent, 1); ?>%
+                                    <span class="badge badge-<?php echo $percentClass; ?>">
+                                        <?php echo $percentSign . number_format($percent, 1); ?>%
                                     </span>
                                 </td>
                             </tr>
@@ -627,17 +694,21 @@ $comparisonData['summary'] = [
                                 <td class="text-right">
                                     <?php 
                                     $diff = $data['period1']['total_ee'] - $data['period2']['total_ee'];
+                                    $diffClass = $diff > 0 ? 'success' : ($diff < 0 ? 'danger' : 'secondary');
+                                    $diffSign = $diff > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $diff > 0 ? 'success' : ($diff < 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $diff > 0 ? '+' : ''; ?><?php echo number_format($diff, 2); ?>
+                                    <span class="badge badge-<?php echo $diffClass; ?>">
+                                        <?php echo $diffSign . number_format($diff, 2); ?>
                                     </span>
                                 </td>
                                 <td class="text-right">
                                     <?php 
                                     $percent = $data['period2']['total_ee'] > 0 ? ($diff / $data['period2']['total_ee']) * 100 : 0;
+                                    $percentClass = $percent > 0 ? 'success' : ($percent < 0 ? 'danger' : 'secondary');
+                                    $percentSign = $percent > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $percent > 0 ? 'success' : ($percent < 0 ? 'danger' : 'secondary'); ?>">
-                                        <?php echo $percent > 0 ? '+' : ''; ?><?php echo number_format($percent, 1); ?>%
+                                    <span class="badge badge-<?php echo $percentClass; ?>">
+                                        <?php echo $percentSign . number_format($percent, 1); ?>%
                                     </span>
                                 </td>
                             </tr>
@@ -648,17 +719,22 @@ $comparisonData['summary'] = [
                                 <td class="text-right">
                                     <?php 
                                     $diff = $data['period1']['total_cost'] - $data['period2']['total_cost'];
+                                    // ค่าไฟที่เพิ่มขึ้น是好? จริงๆควรเป็น danger
+                                    $diffClass = $diff > 0 ? 'danger' : ($diff < 0 ? 'success' : 'secondary');
+                                    $diffSign = $diff > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $diff > 0 ? 'danger' : ($diff < 0 ? 'success' : 'secondary'); ?>">
-                                        <?php echo $diff > 0 ? '+' : ''; ?><?php echo number_format($diff, 2); ?>
+                                    <span class="badge badge-<?php echo $diffClass; ?>">
+                                        <?php echo $diffSign . number_format($diff, 2); ?>
                                     </span>
                                 </td>
                                 <td class="text-right">
                                     <?php 
                                     $percent = $data['period2']['total_cost'] > 0 ? ($diff / $data['period2']['total_cost']) * 100 : 0;
+                                    $percentClass = $percent > 0 ? 'danger' : ($percent < 0 ? 'success' : 'secondary');
+                                    $percentSign = $percent > 0 ? '+' : '';
                                     ?>
-                                    <span class="badge badge-<?php echo $percent > 0 ? 'danger' : ($percent < 0 ? 'success' : 'secondary'); ?>">
-                                        <?php echo $percent > 0 ? '+' : ''; ?><?php echo number_format($percent, 1); ?>%
+                                    <span class="badge badge-<?php echo $percentClass; ?>">
+                                        <?php echo $percentSign . number_format($percent, 1); ?>%
                                     </span>
                                 </td>
                             </tr>
@@ -706,98 +782,205 @@ $comparisonData['summary'] = [
     </div>
 </section>
 
-<!-- PHP chart data output here so it's available as a JS global before/after jQuery loads -->
-<script>
-var comparisonChartData = null; // will be set after footer loads jQuery
-</script>
+<?php
+// Include footer
+require_once __DIR__ . '/../includes/footer.php';
+?>
 
-<?php require_once __DIR__ . '/../includes/footer.php'; ?>
-
-<!-- jQuery is now loaded - safe to use $() -->
 <script>
 let comparisonChart = null;
 
 $(document).ready(function() {
-    // Initialize date pickers
-    $('#period1StartPicker, #period1EndPicker, #period2StartPicker, #period2EndPicker').datetimepicker({
-        format: 'DD/MM/YYYY',
-        locale: 'th',
-        useCurrent: false
-    });
+    // Helper function to convert Date to YYYY-MM-DD
+    function toYMD(d) {
+        return d.getFullYear() + '-' +
+               String(d.getMonth() + 1).padStart(2, '0') + '-' +
+               String(d.getDate()).padStart(2, '0');
+    }
+
+    // Initialize all 4 date pickers
+    const pickerConfig = [
+        { picker: '#period1StartPicker', hidden: '#period1StartHidden', display: '#period1StartDisplay' },
+        { picker: '#period1EndPicker', hidden: '#period1EndHidden', display: '#period1EndDisplay' },
+        { picker: '#period2StartPicker', hidden: '#period2StartHidden', display: '#period2StartDisplay' },
+        { picker: '#period2EndPicker', hidden: '#period2EndHidden', display: '#period2EndDisplay' }
+    ];
     
+    pickerConfig.forEach(function(item) {
+        // Get initial date from hidden input
+        const hiddenValue = $(item.hidden).val();
+        let initialDate = moment();
+        
+        if (hiddenValue && hiddenValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            initialDate = moment(hiddenValue, 'YYYY-MM-DD');
+        }
+        
+        // Initialize datetimepicker
+        $(item.picker).datetimepicker({
+            format: 'DD/MM/YYYY',
+            locale: 'th',
+            useCurrent: false,
+            defaultDate: initialDate
+        });
+        
+        // Update hidden input when date changes
+        $(item.picker).on('change.datetimepicker', function(e) {
+            if (e.date) {
+                const ymd = e.date.format('YYYY-MM-DD');
+                $(item.hidden).val(ymd);
+                
+                // Also update display if needed
+                if ($(item.display).length) {
+                    $(item.display).val(e.date.format('DD/MM/YYYY'));
+                }
+            }
+        });
+    });
+
+    // Prevent form submission with empty values
+    $('#comparisonForm').on('submit', function(e) {
+        pickerConfig.forEach(function(item) {
+            const hidden = $(item.hidden);
+            if (!hidden.val()) {
+                const display = $(item.display).val();
+                if (display && display.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                    const parts = display.split('/');
+                    hidden.val(parts[2] + '-' + parts[1] + '-' + parts[0]);
+                }
+            }
+        });
+    });
+
+    // Render comparison chart
     renderComparisonChart();
 });
 
+// Function to set last month vs current month
 function setLastMonth() {
     const today = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    
+    // Period 1: Last month (full month)
     const lastMonthFirst = new Date(today.getFullYear(), today.getMonth() - 1, 1);
     const lastMonthLast = new Date(today.getFullYear(), today.getMonth(), 0);
     
-    $('#period1Start').val(formatDate(lastMonthFirst));
-    $('#period1End').val(formatDate(lastMonthLast));
-    $('#period2Start').val(formatDate(firstDay));
-    $('#period2End').val(formatDate(lastDay));
+    // Period 2: Current month (up to today)
+    const currentMonthFirst = new Date(today.getFullYear(), today.getMonth(), 1);
+    const currentMonthLast = today;
     
-    $('form').submit();
+    updateDates(lastMonthFirst, lastMonthLast, currentMonthFirst, currentMonthLast);
 }
 
+// Function to set last year vs current year
 function setLastYear() {
     const today = new Date();
-    const firstDay = new Date(today.getFullYear(), 0, 1);
-    const lastDay = new Date(today.getFullYear(), 11, 31);
+    
+    // Period 1: Last year
     const lastYearFirst = new Date(today.getFullYear() - 1, 0, 1);
     const lastYearLast = new Date(today.getFullYear() - 1, 11, 31);
     
-    $('#period1Start').val(formatDate(lastYearFirst));
-    $('#period1End').val(formatDate(lastYearLast));
-    $('#period2Start').val(formatDate(firstDay));
-    $('#period2End').val(formatDate(lastDay));
+    // Period 2: Current year (up to today)
+    const currentYearFirst = new Date(today.getFullYear(), 0, 1);
+    const currentYearLast = today;
     
-    $('form').submit();
+    updateDates(lastYearFirst, lastYearLast, currentYearFirst, currentYearLast);
 }
 
-function formatDate(date) {
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return day + '/' + month + '/' + year;
+// Helper function to update all date pickers
+function updateDates(p1Start, p1End, p2Start, p2End) {
+    function formatYMD(d) {
+        return d.getFullYear() + '-' +
+               String(d.getMonth() + 1).padStart(2, '0') + '-' +
+               String(d.getDate()).padStart(2, '0');
+    }
+    
+    function formatDMY(d) {
+        return String(d.getDate()).padStart(2, '0') + '/' +
+               String(d.getMonth() + 1).padStart(2, '0') + '/' +
+               d.getFullYear();
+    }
+    
+    // Update hidden inputs
+    $('#period1StartHidden').val(formatYMD(p1Start));
+    $('#period1EndHidden').val(formatYMD(p1End));
+    $('#period2StartHidden').val(formatYMD(p2Start));
+    $('#period2EndHidden').val(formatYMD(p2End));
+    
+    // Update pickers
+    $('#period1StartPicker').datetimepicker('date', moment(p1Start));
+    $('#period1EndPicker').datetimepicker('date', moment(p1End));
+    $('#period2StartPicker').datetimepicker('date', moment(p2Start));
+    $('#period2EndPicker').datetimepicker('date', moment(p2End));
+    
+    // Update display inputs
+    $('#period1StartDisplay').val(formatDMY(p1Start));
+    $('#period1EndDisplay').val(formatDMY(p1End));
+    $('#period2StartDisplay').val(formatDMY(p2Start));
+    $('#period2EndDisplay').val(formatDMY(p2End));
+    
+    // Submit form
+    $('#comparisonForm').submit();
 }
 
+// Render chart function
 function renderComparisonChart() {
     const ctx = document.getElementById('comparisonChart').getContext('2d');
     
+    // Destroy existing chart if it exists
     if (comparisonChart) {
         comparisonChart.destroy();
     }
     
-    const data = <?php
-        $chartData = [];
+    // Prepare chart data from PHP
+    const chartData = <?php
+        $chartLabels = [];
+        $period1Data = [];
+        $period2Data = [];
+        
         foreach ($comparisonData as $key => $cData) {
-            $chartData['labels'][] = $cData['name'];
-            $chartData['period1'][] = $cData['period1']['total'] ?? $cData['period1']['total_ee'] ?? $cData['period1']['fuel'] ?? 0;
-            $chartData['period2'][] = $cData['period2']['total'] ?? $cData['period2']['total_ee'] ?? $cData['period2']['fuel'] ?? 0;
+            $chartLabels[] = $cData['name'];
+            // Get appropriate value for each module
+            if ($key == 'air') {
+                $period1Data[] = $cData['period1']['total'] ?? 0;
+                $period2Data[] = $cData['period2']['total'] ?? 0;
+            } elseif ($key == 'energy') {
+                $period1Data[] = $cData['period1']['total'] ?? 0;
+                $period2Data[] = $cData['period2']['total'] ?? 0;
+            } elseif ($key == 'lpg') {
+                $period1Data[] = $cData['period1']['total'] ?? 0;
+                $period2Data[] = $cData['period2']['total'] ?? 0;
+            } elseif ($key == 'boiler') {
+                $period1Data[] = $cData['period1']['fuel'] ?? 0;
+                $period2Data[] = $cData['period2']['fuel'] ?? 0;
+            } elseif ($key == 'summary') {
+                $period1Data[] = $cData['period1']['total_ee'] ?? 0;
+                $period2Data[] = $cData['period2']['total_ee'] ?? 0;
+            }
         }
-        echo json_encode($chartData);
+        
+        echo json_encode([
+            'labels' => $chartLabels,
+            'period1' => $period1Data,
+            'period2' => $period2Data
+        ]);
     ?>;
     
+    // Create new chart
     comparisonChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: data.labels,
+            labels: chartData.labels,
             datasets: [
                 {
                     label: 'ช่วงเวลาที่ 1',
-                    data: data.period1,
-                    backgroundColor: '#17a2b8',
+                    data: chartData.period1,
+                    backgroundColor: 'rgba(23, 162, 184, 0.7)',
                     borderColor: '#17a2b8',
                     borderWidth: 1
                 },
                 {
                     label: 'ช่วงเวลาที่ 2',
-                    data: data.period2,
-                    backgroundColor: '#ffc107',
+                    data: chartData.period2,
+                    backgroundColor: 'rgba(255, 193, 7, 0.7)',
                     borderColor: '#ffc107',
                     borderWidth: 1
                 }
@@ -809,6 +992,15 @@ function renderComparisonChart() {
             plugins: {
                 legend: {
                     position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            let value = context.raw || 0;
+                            return label + ': ' + value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                        }
+                    }
                 }
             },
             scales: {
@@ -817,34 +1009,53 @@ function renderComparisonChart() {
                     title: {
                         display: true,
                         text: 'ปริมาณ'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString();
+                        }
                     }
                 }
             }
         }
     });
+    
+    // Update EUMS state if available
+    if (window.EUMS && EUMS.state) {
+        if (!EUMS.state.charts) EUMS.state.charts = {};
+        EUMS.state.charts.comparison = comparisonChart;
+    }
 }
 
+// Export report function
 function exportReport(format) {
-    const formData = $('form').serialize();
+    const formData = $('#comparisonForm').serialize();
     window.location.href = 'export_report.php?type=comparison&format=' + format + '&' + formData;
 }
 </script>
 
 <style>
 @media print {
-    .btn, .card-tools, .main-footer, .main-header, .main-sidebar {
+    .btn, .card-tools, .main-footer, .main-header, .main-sidebar,
+    .card-header .card-tools, form .btn, .export-buttons {
         display: none !important;
     }
     .content-wrapper {
         margin-left: 0 !important;
+        padding: 0 !important;
     }
     .card {
         border: 1px solid #dee2e6 !important;
         break-inside: avoid;
+        page-break-inside: avoid;
+    }
+    .table {
+        font-size: 10pt;
+    }
+    .badge {
+        border: 1px solid #000 !important;
+        color: #000 !important;
+        background: transparent !important;
     }
 }
 </style>
-
-<?php
-// Footer already included above (before the jQuery-dependent script block)
-?>

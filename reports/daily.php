@@ -34,7 +34,17 @@ require_once __DIR__ . '/../includes/functions.php';
 $db = getDB();
 
 // Get parameters
-$reportDate = isset($_GET['date']) ? $_GET['date'] : date('Y-m-d');
+// รองรับทั้ง d/m/Y (จาก datetimepicker) และ Y-m-d
+$rawDate = isset($_GET['date']) ? trim($_GET['date']) : date('Y-m-d');
+if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $rawDate)) {
+    // dd/mm/yyyy → Y-m-d
+    $dtObj = DateTime::createFromFormat('d/m/Y', $rawDate);
+    $reportDate = $dtObj ? $dtObj->format('Y-m-d') : date('Y-m-d');
+} elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $rawDate)) {
+    $reportDate = $rawDate;
+} else {
+    $reportDate = date('Y-m-d');
+}
 $displayDate = date('d/m/Y', strtotime($reportDate));
 $thaiDate = date('d', strtotime($reportDate)) . ' ' . 
             getThaiMonth(date('m', strtotime($reportDate))) . ' ' . 
@@ -258,18 +268,21 @@ $recentActivities['summary'] = $stmt->fetchAll();
                 </div>
             </div>
             <div class="card-body">
-                <form method="GET" class="form-inline justify-content-center">
+                <form method="GET" class="form-inline justify-content-center" id="reportForm">
                     <div class="form-group mr-2">
                         <label class="mr-2">วันที่:</label>
                         <div class="input-group date" id="datePicker" data-target-input="nearest">
                             <input type="text" class="form-control datetimepicker-input" 
-                                name="date" id="reportDate" 
-                                value="<?php echo date('d/m/Y', strtotime($reportDate)); ?>" 
-                                data-target="#datePicker">
+                                   id="reportDateDisplay" 
+                                   value="<?php echo $displayDate; ?>" 
+                                   data-target="#datePicker"
+                                   autocomplete="off">
                             <div class="input-group-append" data-target="#datePicker" data-toggle="datetimepicker">
                                 <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                             </div>
                         </div>
+                        <!-- hidden: ส่งค่า Y-m-d ให้ PHP เสมอ -->
+                        <input type="hidden" name="date" id="reportDateHidden" value="<?php echo $reportDate; ?>">
                     </div>
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-search"></i> แสดงรายงาน
@@ -639,34 +652,37 @@ require_once __DIR__ . '/../includes/footer.php';
 
 <script>
 $(document).ready(function() {
-    // ทางเลือกที่ 2: ใช้ jQuery UI Datepicker แทน
-    if ($.fn.datepicker) {
-        $('#reportDate').datepicker({
-            format: 'dd/mm/yyyy',
-            autoclose: true,
-            todayHighlight: true,
-            language: 'th-th'
-        }).on('changeDate', function(e) {
-            const selectedDate = e.format('yyyy-mm-dd');
-            window.location.href = '?date=' + selectedDate;
-        });
-    }
-    
-    // หรือใช้ Flatpickr
-    if (typeof flatpickr !== 'undefined') {
-        flatpickr("#reportDate", {
-            dateFormat: "d/m/Y",
-            defaultDate: "<?php echo date('d/m/Y', strtotime($reportDate)); ?>",
-            locale: 'th',
-            onChange: function(selectedDates, dateStr, instance) {
-                const parts = dateStr.split('/');
-                const formattedDate = parts[2] + '-' + parts[1] + '-' + parts[0];
-                window.location.href = '?date=' + formattedDate;
-            }
-        });
-    }
+    // init datetimepicker — แสดง dd/mm/YYYY แต่ sync hidden input เป็น Y-m-d
+    $('#datePicker').datetimepicker({
+        format: 'DD/MM/YYYY',
+        locale: 'th',
+        useCurrent: true,
+        defaultDate: moment('<?php echo $reportDate; ?>', 'YYYY-MM-DD')
+    });
+
+    // เมื่อผู้ใช้เลือกวันใหม่ → sync hidden input
+    $('#datePicker').on('change.datetimepicker', function(e) {
+        if (e.date) {
+            $('#reportDateHidden').val(e.date.format('YYYY-MM-DD'));
+        }
+    });
+
+    // ป้องกัน form ส่งค่าจาก display input โดยตรง
+    $('#reportForm').on('submit', function(e) {
+        const display = $('#reportDateDisplay').val();
+        if (display && display.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+            const parts = display.split('/');
+            $('#reportDateHidden').val(parts[2] + '-' + parts[1] + '-' + parts[0]);
+        }
+    });
 });
+
+function exportReport(format) {
+    const date = $('#reportDateHidden').val() || '<?php echo $reportDate; ?>';
+    window.location.href = 'export_report.php?type=daily&format=' + format + '&date=' + encodeURIComponent(date);
+}
 </script>
+
 <style>
 @media print {
     .btn, .card-tools, .main-footer, .main-header, .main-sidebar {
@@ -680,5 +696,4 @@ $(document).ready(function() {
         break-inside: avoid;
     }
 }
-
 </style>
