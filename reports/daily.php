@@ -263,9 +263,9 @@ $recentActivities['summary'] = $stmt->fetchAll();
                         <label class="mr-2">วันที่:</label>
                         <div class="input-group date" id="datePicker" data-target-input="nearest">
                             <input type="text" class="form-control datetimepicker-input" 
-                                   name="date" id="reportDate" 
-                                   value="<?php echo $displayDate; ?>" 
-                                   data-target="#datePicker">
+                                name="date" id="reportDate" 
+                                value="<?php echo date('d/m/Y', strtotime($reportDate)); ?>" 
+                                data-target="#datePicker">
                             <div class="input-group-append" data-target="#datePicker" data-toggle="datetimepicker">
                                 <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                             </div>
@@ -632,21 +632,41 @@ $recentActivities['summary'] = $stmt->fetchAll();
     </div>
 </section>
 
+<?php
+// Include footer
+require_once __DIR__ . '/../includes/footer.php';
+?>
+
 <script>
 $(document).ready(function() {
-    $('#datePicker').datetimepicker({
-        format: 'DD/MM/YYYY',
-        locale: 'th',
-        useCurrent: true
-    });
+    // ทางเลือกที่ 2: ใช้ jQuery UI Datepicker แทน
+    if ($.fn.datepicker) {
+        $('#reportDate').datepicker({
+            format: 'dd/mm/yyyy',
+            autoclose: true,
+            todayHighlight: true,
+            language: 'th-th'
+        }).on('changeDate', function(e) {
+            const selectedDate = e.format('yyyy-mm-dd');
+            window.location.href = '?date=' + selectedDate;
+        });
+    }
+    
+    // หรือใช้ Flatpickr
+    if (typeof flatpickr !== 'undefined') {
+        flatpickr("#reportDate", {
+            dateFormat: "d/m/Y",
+            defaultDate: "<?php echo date('d/m/Y', strtotime($reportDate)); ?>",
+            locale: 'th',
+            onChange: function(selectedDates, dateStr, instance) {
+                const parts = dateStr.split('/');
+                const formattedDate = parts[2] + '-' + parts[1] + '-' + parts[0];
+                window.location.href = '?date=' + formattedDate;
+            }
+        });
+    }
 });
-
-function exportReport(format) {
-    const date = $('#reportDate').val();
-    window.location.href = 'export_report.php?type=daily&format=' + format + '&date=' + encodeURIComponent(date);
-}
 </script>
-
 <style>
 @media print {
     .btn, .card-tools, .main-footer, .main-header, .main-sidebar {
@@ -660,9 +680,5 @@ function exportReport(format) {
         break-inside: avoid;
     }
 }
-</style>
 
-<?php
-// Include footer
-require_once __DIR__ . '/../includes/footer.php';
-?>
+</style>

@@ -76,7 +76,9 @@
 <?php if (isset($page_js)): ?>
     <script src="/eums/assets/js/pages/<?php echo $page_js; ?>"></script>
 <?php endif; ?>
->
+
+
+</script>
 
 </body>
 </html>
